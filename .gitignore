@@ -25,9 +25,11 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Data files (optional - uncomment if you want to exclude large data files)
-# *.csv
-# *.geojson
+# Large and unnecessary data files
+data/
+archive/
+scripts/
 
-# Large data files
-data/places_ny_zcta.csv
+# Keep only essential rental data
+!nyc-affordability-calculator/*.csv
+!nyc_affordability_scores.csv
