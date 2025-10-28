@@ -28,3 +28,6 @@ Thumbs.db
 # Data files (optional - uncomment if you want to exclude large data files)
 # *.csv
 # *.geojson
+
+# Large data files
+data/places_ny_zcta.csv
