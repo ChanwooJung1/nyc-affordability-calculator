@@ -1,0 +1,19 @@
+{
+  "name": "nyc-affordability-calculator",
+  "version": "2.0.0",
+  "description": "NYC Affordability Calculator - A comprehensive tool to calculate true cost of living across New York City neighborhoods with housing, transportation, daily living, and grocery affordability scores",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "dotenv": "^16.3.1",
+    "papaparse": "^5.4.1",
+    "node-fetch": "^2.7.0"
+  },
+  "keywords": ["rental", "affordability", "nyc", "new-york-city", "places-api", "heatmap", "cost-of-living"],
+  "author": "Joseph Chanwoo Jung",
+  "license": "MIT"
+}

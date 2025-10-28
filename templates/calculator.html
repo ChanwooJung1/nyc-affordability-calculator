@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NYC Affordability Calculator - True Cost of Living</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      background-color: #fafafa;
+      color: #1a1a1a;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Minimalist Header */
+    .header {
+      background: white;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 32px 0;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .header p {
+      font-size: 16px;
+      color: #666;
+      font-weight: 400;
+    }
+
+    /* Clean Controls */
+    .controls {
+      background: white;
+      padding: 32px;
+      border-radius: 16px;
+      margin-bottom: 32px;
+      border: 1px solid #e5e5e5;
+    }
+
+    .controls h4 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      color: #1a1a1a;
+    }
+
+    .slider-container {
+      margin-bottom: 24px;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .slider-label span:first-child {
+      font-weight: 500;
+      color: #1a1a1a;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #e5e5e5;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      cursor: pointer;
+      border: none;
+    }
+
+    .form-select, .btn {
+      border: 1px solid #d4d4d4;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .form-select:focus {
+      border-color: #1a1a1a;
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+    }
+
+    .btn-primary {
+      background: #1a1a1a;
+      color: white;
+      border: none;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background: #000;
+      transform: translateY(-1px);
+    }
+
+    /* Minimalist Score Badges */
+    .score-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.3px;
+    }
+
+    .score-high {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+    .score-medium {
+      background-color: #fff3e0;
+      color: #e65100;
+    }
+    .score-low {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+
+    /* Clean Card Design */
+    .rental-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #e5e5e5;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .rental-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+      border-color: #d4d4d4;
+    }
+
+    .rental-card-image {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, #f5f5f5 0%, #e5e5e5 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+      font-size: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .rental-card-image::before {
+      content: '🏠';
+      font-size: 48px;
+      opacity: 0.3;
+    }
+
+    .rental-card-body {
+      padding: 20px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .rental-rank {
+      font-size: 11px;
+      font-weight: 600;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .rental-address {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+
+    .rental-zip {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 16px;
+    }
+
+    .rental-price {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+
+    .rental-price small {
+      font-size: 14px;
+      font-weight: 400;
+      color: #666;
+    }
+
+    .rental-specs {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+
+    .score-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .score-label {
+      color: #666;
+      font-weight: 400;
+    }
+
+    .overall-score-container {
+      background: #fafafa;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      margin-top: auto;
+    }
+
+    .overall-score-label {
+      font-size: 11px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .overall-score-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: #1a1a1a;
+      letter-spacing: -1px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 80px 20px;
+    }
+
+    .spinner-border {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #f0f0f0;
+      border-top-color: #1a1a1a;
+    }
+
+    .info-card {
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+
+    .info-card h4 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #1a1a1a;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+      margin-top: 16px;
+    }
+
+    .info-item h6 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+
+    .info-item p {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .results-count {
+      font-size: 14px;
+      color: #666;
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .controls {
+        padding: 20px;
+      }
+
+      .rental-price {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="container">
+      <a href="/" style="display: inline-block; margin-bottom: 16px; color: #666; text-decoration: none; font-size: 14px;">← Back to Heatmap</a>
+      <h1>NYC Affordability Calculator</h1>
+      <p>Find genuinely affordable rentals based on true cost of living</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Why These Scores Matter Section -->
+    <div class="info-card">
+      <h4>Why These Scores Matter</h4>
+      <p style="color: #666; margin-bottom: 24px;">Rent is only part of your monthly housing cost. True affordability includes transportation, groceries, and lifestyle.</p>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <h6>💰 Housing (60%)</h6>
+          <p>Rent compared to neighborhood median. Below-median saves $200-500/month.</p>
+        </div>
+
+        <div class="info-item">
+          <h6>🚇 Transportation (20%)</h6>
+          <p>Subway access and commute times. Good transit saves $400-800/month vs car ownership.</p>
+        </div>
+
+        <div class="info-item">
+          <h6>☕ Daily Living (10%)</h6>
+          <p>Walkable cafes and restaurants. Eliminates $100-200/month in delivery fees.</p>
+        </div>
+
+        <div class="info-item">
+          <h6>🛒 Groceries (10%)</h6>
+          <p>Access to budget grocery stores. Saves $100-200/month vs premium-only areas.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <h4>Customize Your Priorities</h4>
+
+      <div class="row">
+        <div class="col-md-3">
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>💰 Housing</span>
+              <span id="affordabilityValue">60%</span>
+            </div>
+            <input type="range" id="affordabilitySlider" min="0" max="100" value="60">
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>🚇 Transportation</span>
+              <span id="transitValue">20%</span>
+            </div>
+            <input type="range" id="transitSlider" min="0" max="100" value="20">
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>☕ Daily Living</span>
+              <span id="socialValue">10%</span>
+            </div>
+            <input type="range" id="socialSlider" min="0" max="100" value="10">
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="slider-container">
+            <div class="slider-label">
+              <span>🛒 Grocery</span>
+              <span id="groceryValue">10%</span>
+            </div>
+            <input type="range" id="grocerySlider" min="0" max="100" value="10">
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-4">
+        <div class="col-md-4">
+          <label for="zipFilter" style="display: block; margin-bottom: 8px; font-size: 14px; color: #666;">Neighborhood</label>
+          <select class="form-select" id="zipFilter">
+            <option value="">All ZIP Codes</option>
+            <option value="10001">10001 - Chelsea/Garment District</option>
+            <option value="11201">11201 - Brooklyn Heights</option>
+            <option value="11203">11203 - East Flatbush</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="sortBy" style="display: block; margin-bottom: 8px; font-size: 14px; color: #666;">Sort By</label>
+          <select class="form-select" id="sortBy">
+            <option value="Affordability Index">Affordability Score</option>
+            <option value="Rental Price">Price (Low to High)</option>
+            <option value="Transit Score">Transit Score</option>
+            <option value="Social Score (Normalized)">Social Score</option>
+          </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button class="btn btn-primary w-100" onclick="loadRentals()">Update Results</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Header -->
+    <div class="results-header">
+      <h4 style="margin: 0; font-size: 20px; font-weight: 600;">Available Rentals</h4>
+      <span class="results-count" id="resultsCount"></span>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsContainer" class="loading">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2">Loading rentals...</p>
+    </div>
+  </div>
+
+  <script>
+    // Get ZIP code from URL parameter if provided
+    const urlParams = new URLSearchParams(window.location.search);
+    const zipFromUrl = urlParams.get('zip');
+
+    // Slider auto-normalize to 100%
+    const sliders = {
+      affordability: document.getElementById('affordabilitySlider'),
+      transit: document.getElementById('transitSlider'),
+      social: document.getElementById('socialSlider'),
+      grocery: document.getElementById('grocerySlider')
+    };
+
+    const values = {
+      affordability: document.getElementById('affordabilityValue'),
+      transit: document.getElementById('transitValue'),
+      social: document.getElementById('socialValue'),
+      grocery: document.getElementById('groceryValue')
+    };
+
+    // Update slider values and normalize
+    function updateSliders() {
+      const total = parseInt(sliders.affordability.value) +
+                    parseInt(sliders.transit.value) +
+                    parseInt(sliders.social.value) +
+                    parseInt(sliders.grocery.value);
+
+      // Normalize to 100
+      if (total > 0) {
+        const affordability = Math.round((parseInt(sliders.affordability.value) / total) * 100);
+        const transit = Math.round((parseInt(sliders.transit.value) / total) * 100);
+        const social = Math.round((parseInt(sliders.social.value) / total) * 100);
+        const grocery = 100 - affordability - transit - social; // Ensure sum is exactly 100
+
+        values.affordability.textContent = affordability + '%';
+        values.transit.textContent = transit + '%';
+        values.social.textContent = social + '%';
+        values.grocery.textContent = grocery + '%';
+      }
+    }
+
+    // Add event listeners
+    Object.values(sliders).forEach(slider => {
+      slider.addEventListener('input', updateSliders);
+    });
+
+    // Get score badge class
+    function getScoreBadgeClass(score) {
+      if (score >= 75) return 'score-high';
+      if (score >= 50) return 'score-medium';
+      return 'score-low';
+    }
+
+    // Load rentals from API
+    async function loadRentals() {
+      const resultsContainer = document.getElementById('resultsContainer');
+      resultsContainer.innerHTML = '<div class="loading"><div class="spinner-border text-primary"></div><p class="mt-2">Loading...</p></div>';
+
+      // Get weights (normalized)
+      const total = parseInt(sliders.affordability.value) +
+                    parseInt(sliders.transit.value) +
+                    parseInt(sliders.social.value) +
+                    parseInt(sliders.grocery.value);
+
+      const weights = {
+        affordability: parseInt(sliders.affordability.value) / total,
+        transit: parseInt(sliders.transit.value) / total,
+        social: parseInt(sliders.social.value) / total,
+        grocery: parseInt(sliders.grocery.value) / total
+      };
+
+      // Get filters
+      const zipCode = document.getElementById('zipFilter').value;
+      const sortBy = document.getElementById('sortBy').value;
+
+      // Build API URL
+      let url = zipCode
+        ? `/api/rentals/zip/${zipCode}`
+        : '/api/rentals';
+
+      url += `?affordabilityWeight=${weights.affordability}&transitWeight=${weights.transit}&socialWeight=${weights.social}&groceryWeight=${weights.grocery}&sortBy=${sortBy}`;
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+          displayRentals(data.rentals);
+        } else {
+          resultsContainer.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+        }
+      } catch (error) {
+        resultsContainer.innerHTML = `<div class="alert alert-danger">Failed to load rentals: ${error.message}</div>`;
+      }
+    }
+
+    // Display rentals as cards (in-app display, no external links)
+    function displayRentals(rentals) {
+      const resultsContainer = document.getElementById('resultsContainer');
+      const resultsCount = document.getElementById('resultsCount');
+
+      if (rentals.length === 0) {
+        resultsContainer.innerHTML = '<div style="text-align: center; padding: 60px 20px; color: #999;">No rentals found matching your criteria</div>';
+        resultsCount.textContent = '';
+        return;
+      }
+
+      resultsCount.textContent = `${rentals.length} rental${rentals.length > 1 ? 's' : ''} found`;
+
+      let html = '<div class="row">';
+
+      rentals.forEach((rental, index) => {
+        const affordabilityBadge = getScoreBadgeClass(rental['Affordability Index']);
+        const housingBadge = getScoreBadgeClass(rental['Affordability Score']);
+        const transitBadge = getScoreBadgeClass(rental['Transit Score']);
+        const dailyLivingBadge = getScoreBadgeClass(rental['Social Score (Normalized)']);
+        const groceryBadge = getScoreBadgeClass(rental['Grocery Score (Normalized)'] || 0);
+
+        // Build rental detail URL
+        const zipCode = document.getElementById('zipFilter').value || rental['Zip Code'];
+        const rentalDetailUrl = `/rental?zip=${zipCode}&index=${index}`;
+
+        // Format specs
+        const specs = [];
+        if (rental.Bedrooms) specs.push(`${rental.Bedrooms} bed`);
+        if (rental.Bathrooms) specs.push(`${rental.Bathrooms} bath`);
+        if (rental['Square Feet']) specs.push(`${rental['Square Feet']} sqft`);
+        const specsHtml = specs.length > 0 ? `<div class="rental-specs">${specs.join(' • ')}</div>` : '';
+
+        html += `
+          <div class="col-md-6 col-lg-4 mb-4">
+            <div class="rental-card" onclick="window.location.href='${rentalDetailUrl}'">
+              <!-- Image Preview -->
+              <div class="rental-card-image"></div>
+
+              <!-- Card Body -->
+              <div class="rental-card-body">
+                <div class="rental-rank">Ranked #${index + 1}</div>
+                <div class="rental-address">${rental.Address}</div>
+                <div class="rental-zip">ZIP ${rental['Zip Code']}</div>
+
+                <div class="rental-price">
+                  $${rental['Rental Price'].toLocaleString()}
+                  <small>/mo</small>
+                </div>
+
+                ${specsHtml}
+
+                <div style="margin-bottom: 16px;">
+                  <div class="score-row">
+                    <span class="score-label">💰 Housing</span>
+                    <span class="score-badge ${housingBadge}">${Math.round(rental['Affordability Score'])}</span>
+                  </div>
+                  <div class="score-row">
+                    <span class="score-label">🚇 Transit</span>
+                    <span class="score-badge ${transitBadge}">${Math.round(rental['Transit Score'])}</span>
+                  </div>
+                  <div class="score-row">
+                    <span class="score-label">☕ Daily Living</span>
+                    <span class="score-badge ${dailyLivingBadge}">${Math.round(rental['Social Score (Normalized)'])}</span>
+                  </div>
+                  <div class="score-row">
+                    <span class="score-label">🛒 Grocery</span>
+                    <span class="score-badge ${groceryBadge}">${Math.round(rental['Grocery Score (Normalized)'] || 0)}</span>
+                  </div>
+                </div>
+
+                <div class="overall-score-container">
+                  <div class="overall-score-label">Overall Score</div>
+                  <div class="overall-score-value">${Math.round(rental['Affordability Index'])}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+
+      resultsContainer.innerHTML = html;
+    }
+
+    // Load rentals on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Set ZIP filter if provided in URL
+      if (zipFromUrl) {
+        const zipFilter = document.getElementById('zipFilter');
+        zipFilter.value = zipFromUrl;
+
+        // Add visual highlight to show ZIP was pre-selected
+        const header = document.querySelector('.header');
+        header.innerHTML = `
+          <h1>NYC Affordability Calculator</h1>
+          <p class="mb-0">Viewing rentals in ZIP code <strong>${zipFromUrl}</strong></p>
+          <p class="mb-0 mt-2"><small>Change the filter below to view other areas</small></p>
+        `;
+      }
+
+      loadRentals();
+    });
+  </script>
+</body>
+</html>

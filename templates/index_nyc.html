@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NYC Affordability Heatmap</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        .heatmap-container {
+            height: 700px;
+            margin-bottom: 40px;
+            border: 2px solid #ddd;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .legend {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .legend-item {
+            margin: 4px 0;
+            display: flex;
+            align-items: center;
+        }
+        .legend-color {
+            width: 30px;
+            height: 15px;
+            margin-right: 8px;
+            border: 1px solid #999;
+        }
+        .info-box {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .borough-filter {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .borough-filter button {
+            margin: 5px;
+            padding: 10px 20px;
+            border: 2px solid #3498db;
+            background-color: white;
+            color: #3498db;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .borough-filter button:hover {
+            background-color: #3498db;
+            color: white;
+        }
+        .borough-filter button.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        /* Custom tooltip styling */
+        .custom-tooltip {
+            background: white !important;
+            border: 1px solid #ddd !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+            padding: 12px !important;
+            font-family: Arial, sans-serif !important;
+        }
+
+        .custom-tooltip::before {
+            border-top-color: white !important;
+        }
+
+        .leaflet-tooltip-top:before {
+            border-top-color: white !important;
+        }
+
+        /* Scrollbar styling for rental list */
+        .custom-tooltip div::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-tooltip div::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .custom-tooltip div::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .custom-tooltip div::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NYC Affordability Calculator</h1>
+        <div class="subtitle">Find your next home based on what actually matters: true cost of living</div>
+
+        <div class="info-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; margin-bottom: 30px;">
+            <h2 style="margin-top: 0; color: white; font-size: 28px;">Why Rent Alone Doesn't Tell the Full Story</h2>
+            <p style="font-size: 16px; line-height: 1.6;">
+                A $3,500/month apartment in one neighborhood could cost you <strong>$1,000+ more per month</strong> than
+                a $4,000 apartment elsewhere when you factor in transportation, groceries, and lifestyle.
+            </p>
+            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 0;">
+                <strong>Our Affordability Index</strong> measures the <em>true</em> monthly cost by combining:
+            </p>
+        </div>
+
+        <div class="info-box">
+            <h3 style="color: #667eea;">What We Measure & Why It Matters</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+                <div>
+                    <h4 style="color: #667eea; margin-bottom: 8px;">🏠 Housing (60%)</h4>
+                    <p style="margin: 0; font-size: 14px; color: #555;">Rent affordability based on median prices. Lower rent = more money for savings and experiences.</p>
+                </div>
+                <div>
+                    <h4 style="color: #667eea; margin-bottom: 8px;">🚇 Transportation (20%)</h4>
+                    <p style="margin: 0; font-size: 14px; color: #555;">Transit access to work hubs. Good transit saves 10+ hours/week and reduces stress.</p>
+                </div>
+                <div>
+                    <h4 style="color: #667eea; margin-bottom: 8px;">☕ Daily Living (10%)</h4>
+                    <p style="margin: 0; font-size: 14px; color: #555;">Coffee shops, restaurants, social venues. Walkable neighborhoods save time and build community.</p>
+                </div>
+                <div>
+                    <h4 style="color: #667eea; margin-bottom: 8px;">🛒 Groceries (10%)</h4>
+                    <p style="margin: 0; font-size: 14px; color: #555;">Access to affordable grocery stores. Budget stores save $100-200/month vs premium-only areas.</p>
+                </div>
+            </div>
+            <p style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-left: 4px solid #667eea; font-weight: 500;">
+                💡 <strong>Bottom line:</strong> Higher scores = Lower true cost of living + Better quality of life
+            </p>
+        </div>
+
+        <div class="borough-filter">
+            <button onclick="filterBorough('all')" class="active" id="btn-all">All NYC</button>
+            <button onclick="filterBorough('Manhattan')" id="btn-Manhattan">Manhattan</button>
+            <button onclick="filterBorough('Brooklyn')" id="btn-Brooklyn">Brooklyn</button>
+            <button onclick="filterBorough('Queens')" id="btn-Queens">Queens</button>
+            <button onclick="filterBorough('Bronx')" id="btn-Bronx">Bronx</button>
+            <button onclick="filterBorough('Staten Island')" id="btn-Staten Island">Staten Island</button>
+        </div>
+
+        <div class="heatmap-container" id="heatmapMap"></div>
+    </div>
+
+    <script>
+        // Data from Flask
+        const zipCodes = {{ zip_codes | tojson }};
+        const overallScores = {{ overall_scores | tojson }};
+        const housingScores = {{ housing_scores | tojson }};
+        const socialScores = {{ social_scores | tojson }};
+        const transitScores = {{ transit_scores | tojson }};
+        const boroughs = {{ boroughs | tojson }};
+        const latitudes = {{ latitudes | tojson }};
+        const longitudes = {{ longitudes | tojson }};
+        const normalizedScores = {{ normalized_scores | tojson }};
+
+        // Initialize map centered on NYC
+        const map = L.map('heatmapMap').setView([40.7128, -74.0060], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 15,
+            minZoom: 10
+        }).addTo(map);
+
+        // Add legend
+        const legend = L.control({position: 'bottomright'});
+        legend.onAdd = function (map) {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = `
+                <div class="legend-title">Affordability Score</div>
+                <div class="legend-item"><span class="legend-color" style="background: #006d2c"></span> 80-100 (Excellent)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #31a354"></span> 60-80 (Good)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #74c476"></span> 40-60 (Moderate)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #bae4b3"></span> 20-40 (Fair)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #edf8e9"></span> 0-20 (Poor)</div>
+            `;
+            return div;
+        };
+        legend.addTo(map);
+
+        let geoJsonLayer = null;
+        let currentFilter = 'all';
+        let rentalMarkersLayer = null; // Layer group for rental markers
+
+        // Custom icon for rental markers
+        const rentalIcon = L.divIcon({
+            className: 'rental-marker',
+            html: '<div style="background: #667eea; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+            iconSize: [12, 12],
+            iconAnchor: [6, 6]
+        });
+
+        // Load GeoJSON and color by score
+        function loadGeoJSON() {
+            fetch('/static/ny_zip_codes.json')
+                .then(response => response.json())
+                .then(geojson => {
+                    if (geoJsonLayer) {
+                        map.removeLayer(geoJsonLayer);
+                    }
+
+                    geoJsonLayer = L.geoJSON(geojson, {
+                        style: function(feature) {
+                            const zip = feature.properties.ZCTA5CE10.toString();
+                            const index = zipCodes.indexOf(zip);
+
+                            // Filter by borough
+                            if (index === -1) return { fillOpacity: 0, weight: 0 };
+                            if (currentFilter !== 'all' && boroughs[index] !== currentFilter) {
+                                return { fillOpacity: 0, weight: 0 };
+                            }
+
+                            const score = overallScores[index];
+                            return {
+                                fillColor: getColorByScore(score),
+                                weight: 2,
+                                opacity: 1,
+                                color: '#333',
+                                fillOpacity: 0.7
+                            };
+                        },
+                        onEachFeature: function(feature, layer) {
+                            const zip = feature.properties.ZCTA5CE10.toString();
+                            const index = zipCodes.indexOf(zip);
+
+                            if (index !== -1) {
+                                const score = overallScores[index].toFixed(1);
+                                const borough = boroughs[index];
+                                const housing = housingScores[index].toFixed(1);
+                                const social = socialScores[index].toFixed(1);
+                                const transit = transitScores[index].toFixed(1);
+
+                                // No popup - removed per user request
+
+                                // Create hover tooltip with ZIP and rental preview
+                                const createTooltipContent = (zipCode) => {
+                                    return `
+                                        <div style="font-family: Arial; min-width: 300px; max-width: 400px;">
+                                            <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #2c3e50;">
+                                                ZIP ${zipCode} - ${borough}
+                                            </div>
+                                            <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 10px;">
+                                                Overall Score: <strong>${score}/100</strong>
+                                            </div>
+                                            <div id="tooltip-rentals-${zipCode}" style="font-size: 12px;">
+                                                <em style="color: #999;">Hover to load rentals...</em>
+                                            </div>
+                                        </div>
+                                    `;
+                                };
+
+                                // Bind tooltip that appears on hover
+                                layer.bindTooltip(createTooltipContent(zip), {
+                                    sticky: true,
+                                    direction: 'top',
+                                    className: 'custom-tooltip'
+                                });
+
+                                // Load rental data when hovering
+                                let rentalsLoaded = false;
+                                layer.on('mouseover', function(e) {
+                                    layer.setStyle({ fillOpacity: 0.9, weight: 3 });
+
+                                    // Load rentals only once
+                                    if (!rentalsLoaded) {
+                                        rentalsLoaded = true;
+                                        fetch(`/api/rentals/${zip}`)
+                                            .then(response => response.json())
+                                            .then(data => {
+                                                const tooltipDiv = document.getElementById(`tooltip-rentals-${zip}`);
+                                                if (tooltipDiv && data.success && data.count > 0) {
+                                                    let html = `<div style="margin-top: 8px;">
+                                                        <strong style="color: #667eea;">${data.count} Rental${data.count > 1 ? 's' : ''} Available:</strong>
+                                                        <div style="max-height: 300px; overflow-y: auto; margin-top: 8px;">`;
+
+                                                    // Show ALL rentals, not just 3
+                                                    data.rentals.forEach((r, idx) => {
+                                                        const price = r['Rental Price'] ? `$${r['Rental Price'].toLocaleString()}` : 'N/A';
+                                                        const addr = r.Address || 'Address N/A';
+                                                        const beds = r.Bedrooms || '?';
+                                                        const baths = r.Bathrooms || '?';
+
+                                                        html += `<div style="margin: 6px 0; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e5e5e5;">
+                                                            <div style="font-weight: bold; color: #1a1a1a;">${price}/mo</div>
+                                                            <div style="color: #666; font-size: 11px; margin: 2px 0;">${addr}</div>
+                                                            <div style="color: #999; font-size: 10px;">${beds} bed • ${baths} bath</div>
+                                                        </div>`;
+                                                    });
+
+                                                    html += `</div></div>`;
+                                                    tooltipDiv.innerHTML = html;
+
+                                                    // ADD RENTAL MARKERS TO MAP
+                                                    showRentalMarkers(data.rentals, zip);
+                                                } else if (tooltipDiv) {
+                                                    tooltipDiv.innerHTML = `<em style="color: #999;">No rental data available</em>`;
+                                                }
+                                            })
+                                            .catch(err => {
+                                                console.error('Error loading rentals:', err);
+                                                const tooltipDiv = document.getElementById(`tooltip-rentals-${zip}`);
+                                                if (tooltipDiv) {
+                                                    tooltipDiv.innerHTML = `<em style="color: #999;">Unable to load rentals</em>`;
+                                                }
+                                            });
+                                    }
+                                });
+
+                                layer.on('mouseout', function(e) {
+                                    layer.setStyle({ fillOpacity: 0.7, weight: 2 });
+                                    // Remove rental markers when mouse leaves ZIP
+                                    hideRentalMarkers();
+                                });
+
+                                layer.on('click', function(e) {
+                                    // Navigate directly to calculator for this ZIP
+                                    window.location.href = `/calculator?zip=${zip}`;
+                                });
+                            }
+                        }
+                    }).addTo(map);
+                })
+                .catch(error => console.error('Error loading GeoJSON:', error));
+        }
+
+        function getColorByScore(score) {
+            return score > 80 ? '#006d2c' :
+                   score > 60 ? '#31a354' :
+                   score > 40 ? '#74c476' :
+                   score > 20 ? '#bae4b3' :
+                                '#edf8e9';
+        }
+
+        function filterBorough(borough) {
+            currentFilter = borough;
+
+            // Update button styles
+            document.querySelectorAll('.borough-filter button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`btn-${borough}`).classList.add('active');
+
+            // Reload GeoJSON with filter
+            loadGeoJSON();
+
+            // Adjust map view
+            if (borough === 'Manhattan') {
+                map.setView([40.7831, -73.9712], 12);
+            } else if (borough === 'Brooklyn') {
+                map.setView([40.6782, -73.9442], 12);
+            } else if (borough === 'Queens') {
+                map.setView([40.7282, -73.7949], 11);
+            } else if (borough === 'Bronx') {
+                map.setView([40.8448, -73.8648], 12);
+            } else if (borough === 'Staten Island') {
+                map.setView([40.5795, -74.1502], 12);
+            } else {
+                map.setView([40.7128, -74.0060], 11);
+            }
+        }
+
+        // Function to show rental markers on map
+        function showRentalMarkers(rentals, zipCode) {
+            // Clear existing markers first
+            hideRentalMarkers();
+
+            // Create new layer group for markers
+            rentalMarkersLayer = L.layerGroup();
+
+            rentals.forEach((rental, idx) => {
+                const lat = rental.Latitude;
+                const lng = rental.Longitude;
+
+                // Skip if no valid coordinates
+                if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+                    return;
+                }
+
+                const price = rental['Rental Price'] ? `$${rental['Rental Price'].toLocaleString()}` : 'N/A';
+                const addr = rental.Address || 'Address N/A';
+                const beds = rental.Bedrooms || '?';
+                const baths = rental.Bathrooms || '?';
+
+                // Create marker
+                const marker = L.marker([lat, lng], { icon: rentalIcon })
+                    .bindTooltip(`
+                        <div style="font-family: Arial; font-size: 12px; min-width: 180px;">
+                            <strong style="color: #667eea; font-size: 14px;">${price}/mo</strong><br>
+                            <span style="color: #666;">${addr}</span><br>
+                            <span style="color: #999; font-size: 11px;">${beds} bed • ${baths} bath</span><br>
+                            <a href="/rental?zip=${zipCode}&index=${idx}" style="display: inline-block; margin-top: 6px; padding: 4px 10px; background: #667eea; color: white; text-decoration: none; border-radius: 3px; font-size: 11px; font-weight: bold;">
+                                View Details →
+                            </a>
+                        </div>
+                    `, {
+                        direction: 'top',
+                        offset: [0, -5]
+                    });
+
+                // Make marker clickable to view details
+                marker.on('click', function() {
+                    window.location.href = `/rental?zip=${zipCode}&index=${idx}`;
+                });
+
+                // Add to layer group
+                rentalMarkersLayer.addLayer(marker);
+            });
+
+            // Add layer group to map
+            rentalMarkersLayer.addTo(map);
+        }
+
+        // Function to hide/remove rental markers
+        function hideRentalMarkers() {
+            if (rentalMarkersLayer) {
+                map.removeLayer(rentalMarkersLayer);
+                rentalMarkersLayer = null;
+            }
+        }
+
+        // Initial load
+        loadGeoJSON();
+    </script>
+</body>
+</html>

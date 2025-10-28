@@ -1,0 +1,9 @@
+address,zip,price,lat,lng,url,bedrooms,bathrooms,sqft,Transit Score,Social Score,Grocery Score
+"937 Brooklyn Ave #1, Brooklyn, NY",11203,3500,40.67576,-73.492916,,1,1,,0,10,5
+"3403 Foster Ave #2G, Brooklyn, NY ",11203,3369,40.639175,-73.943962,,1,1,655,64,20,110
+"102 53rd St #5C, Brooklyn, NY",11203,2400,40.648425,-74.02054,,1,1,,64,20,100
+"149 E 56th St #2R, Brooklyn, NY",11203,2200,40.653378,-73.924416,,1,1,,49,20,105
+"897 New York Ave #4D, Brooklyn, NY",11203,2795,40.651637,-73.946434,,1,1,,75,20,110
+"906 E New York Ave #5A, Brooklyn, NY",11203,2625,40.662376,-73.932578,,1,1,,68,20,105
+"530 Midwood St #5J, Brooklyn, NY",11203,2666,40.660355,-73.943108,,1,1,,64,20,105
+"1051 New York Ave #1F, Brooklyn, NY",11203,2295,40.647636,-73.945999,,1,1,,65,20,110

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rental Details - NYC Affordability Calculator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body {
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 15px;
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .back-link:hover {
+      color: #e0e0e0;
+    }
+    .rental-card {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 25px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .score-container {
+      margin-bottom: 25px;
+    }
+    .score-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .score-label {
+      font-weight: 600;
+      font-size: 1.1em;
+    }
+    .score-value {
+      font-size: 1.5em;
+      font-weight: bold;
+      padding: 5px 15px;
+      border-radius: 8px;
+    }
+    .score-high { background-color: #28a745; color: white; }
+    .score-medium { background-color: #ffc107; color: #333; }
+    .score-low { background-color: #dc3545; color: white; }
+    .progress {
+      height: 25px;
+    }
+    .map-container {
+      height: 400px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid #ddd;
+    }
+    .price-tag {
+      font-size: 2.5em;
+      color: #28a745;
+      font-weight: bold;
+    }
+    .detail-item {
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .detail-item:last-child {
+      border-bottom: none;
+    }
+    .loading {
+      text-align: center;
+      padding: 60px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <a href="javascript:history.back()" class="back-link">← Back to All Rentals</a> |
+      <a href="/" class="back-link">🗺️ Back to Heatmap</a>
+      <h1>Rental Details</h1>
+      <p class="mb-0">Complete affordability breakdown for this listing</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingContainer" class="rental-card loading">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2">Loading rental details...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorContainer" class="rental-card" style="display: none;">
+      <div class="alert alert-danger mb-0">
+        <h4>Error Loading Rental</h4>
+        <p id="errorMessage"></p>
+        <a href="/" class="btn btn-primary">Return to Calculator</a>
+      </div>
+    </div>
+
+    <!-- Rental Details Container -->
+    <div id="rentalContainer" style="display: none;">
+      <!-- Price and Basic Info -->
+      <div class="rental-card">
+        <div class="row">
+          <div class="col-md-8">
+            <h2 id="rentalAddress" class="mb-3"></h2>
+            <div class="price-tag mb-3" id="rentalPrice"></div>
+            <div class="row">
+              <div class="col-md-4" id="bedroomsInfo"></div>
+              <div class="col-md-4" id="bathroomsInfo"></div>
+              <div class="col-md-4" id="sqftInfo"></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="score-value score-high w-100 text-center" style="font-size: 3em; padding: 20px;" id="overallScore">
+              -
+            </div>
+            <p class="text-center mt-2 mb-0"><strong>Overall Affordability</strong></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Score Breakdown -->
+      <div class="rental-card">
+        <h3 class="mb-4">Affordability Score Breakdown</h3>
+
+        <!-- Housing Affordability -->
+        <div class="score-container">
+          <div class="score-header">
+            <span class="score-label">💰 Housing Affordability</span>
+            <span class="score-value" id="housingScoreBadge">-</span>
+          </div>
+          <div class="progress">
+            <div class="progress-bar bg-success" id="housingProgress" style="width: 0%"></div>
+          </div>
+          <p class="text-muted mt-2 mb-0" id="housingDescription"></p>
+        </div>
+
+        <!-- Transportation -->
+        <div class="score-container">
+          <div class="score-header">
+            <span class="score-label">🚇 Transportation Affordability</span>
+            <span class="score-value" id="transitScoreBadge">-</span>
+          </div>
+          <div class="progress">
+            <div class="progress-bar bg-info" id="transitProgress" style="width: 0%"></div>
+          </div>
+          <p class="text-muted mt-2 mb-0" id="transitDescription"></p>
+        </div>
+
+        <!-- Daily Living -->
+        <div class="score-container">
+          <div class="score-header">
+            <span class="score-label">☕ Daily Living Affordability</span>
+            <span class="score-value" id="socialScoreBadge">-</span>
+          </div>
+          <div class="progress">
+            <div class="progress-bar bg-warning" id="socialProgress" style="width: 0%"></div>
+          </div>
+          <p class="text-muted mt-2 mb-0" id="socialDescription"></p>
+        </div>
+
+        <!-- Grocery -->
+        <div class="score-container">
+          <div class="score-header">
+            <span class="score-label">🛒 Grocery Affordability</span>
+            <span class="score-value" id="groceryScoreBadge">-</span>
+          </div>
+          <div class="progress">
+            <div class="progress-bar bg-primary" id="groceryProgress" style="width: 0%"></div>
+          </div>
+          <p class="text-muted mt-2 mb-0" id="groceryDescription"></p>
+        </div>
+      </div>
+
+      <!-- Map -->
+      <div class="rental-card">
+        <h3 class="mb-3">Location</h3>
+        <div class="map-container" id="rentalMap"></div>
+      </div>
+
+      <!-- What This Means -->
+      <div class="rental-card">
+        <h3 class="mb-3">What This Means for Your Budget</h3>
+        <div class="alert alert-info">
+          <p class="mb-2"><strong>This rental's affordability index is <span id="summaryScore"></span>/100</strong></p>
+          <p class="mb-0" id="summaryText"></p>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-12">
+            <h5>Calculated Priorities:</h5>
+            <ul id="weightsList"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const zipCode = urlParams.get('zip');
+    const index = urlParams.get('index');
+
+    // Helper function to get score badge class
+    function getScoreBadgeClass(score) {
+      if (score >= 75) return 'score-high';
+      if (score >= 50) return 'score-medium';
+      return 'score-low';
+    }
+
+    // Load rental details
+    async function loadRentalDetails() {
+      if (!zipCode || index === null) {
+        showError('Missing rental information. Please return to the calculator and select a rental.');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/rental?zip=${zipCode}&index=${index}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          showError(data.error || 'Failed to load rental details');
+          return;
+        }
+
+        displayRentalDetails(data.rental, data.weights);
+      } catch (error) {
+        showError(`Failed to load rental: ${error.message}`);
+      }
+    }
+
+    function showError(message) {
+      document.getElementById('loadingContainer').style.display = 'none';
+      document.getElementById('errorContainer').style.display = 'block';
+      document.getElementById('errorMessage').textContent = message;
+    }
+
+    function displayRentalDetails(rental, weights) {
+      // Hide loading, show content
+      document.getElementById('loadingContainer').style.display = 'none';
+      document.getElementById('rentalContainer').style.display = 'block';
+
+      // Basic Info
+      document.getElementById('rentalAddress').textContent = rental.Address;
+      document.getElementById('rentalPrice').textContent = `$${rental['Rental Price'].toLocaleString()}/mo`;
+
+      if (rental.Bedrooms) {
+        document.getElementById('bedroomsInfo').innerHTML = `<strong>${rental.Bedrooms}</strong> bedroom${rental.Bedrooms > 1 ? 's' : ''}`;
+      }
+      if (rental.Bathrooms) {
+        document.getElementById('bathroomsInfo').innerHTML = `<strong>${rental.Bathrooms}</strong> bath${rental.Bathrooms > 1 ? 's' : ''}`;
+      }
+      if (rental['Square Feet']) {
+        document.getElementById('sqftInfo').innerHTML = `<strong>${rental['Square Feet'].toLocaleString()}</strong> sqft`;
+      }
+
+      // Overall Score
+      const overallScore = Math.round(rental['Affordability Index']);
+      const overallBadge = getScoreBadgeClass(overallScore);
+      const overallElem = document.getElementById('overallScore');
+      overallElem.textContent = overallScore;
+      overallElem.className = `score-value ${overallBadge} w-100 text-center`;
+      overallElem.style.fontSize = '3em';
+      overallElem.style.padding = '20px';
+
+      // Housing Score
+      const housingScore = Math.round(rental['Affordability Score']);
+      const housingBadge = getScoreBadgeClass(housingScore);
+      document.getElementById('housingScoreBadge').textContent = housingScore;
+      document.getElementById('housingScoreBadge').className = `score-value ${housingBadge}`;
+      document.getElementById('housingProgress').style.width = `${housingScore}%`;
+      document.getElementById('housingDescription').textContent =
+        `Rent is ${housingScore >= 75 ? 'significantly below' : housingScore >= 50 ? 'below' : 'near'} the neighborhood median. ${housingScore >= 75 ? 'Excellent value!' : housingScore >= 50 ? 'Good deal.' : 'Market rate.'}`;
+
+      // Transit Score
+      const transitScore = Math.round(rental['Transit Score']);
+      const transitBadge = getScoreBadgeClass(transitScore);
+      document.getElementById('transitScoreBadge').textContent = transitScore;
+      document.getElementById('transitScoreBadge').className = `score-value ${transitBadge}`;
+      document.getElementById('transitProgress').style.width = `${transitScore}%`;
+      document.getElementById('transitDescription').textContent =
+        transitScore >= 75 ? 'Excellent subway access to major NYC destinations. Minimal commute time.' :
+        transitScore >= 50 ? 'Good transit connections. Moderate commute times.' :
+        'Limited transit access. Longer commutes expected.';
+
+      // Social Score
+      const socialScore = Math.round(rental['Social Score (Normalized)']);
+      const socialBadge = getScoreBadgeClass(socialScore);
+      document.getElementById('socialScoreBadge').textContent = socialScore;
+      document.getElementById('socialScoreBadge').className = `score-value ${socialBadge}`;
+      document.getElementById('socialProgress').style.width = `${socialScore}%`;
+      document.getElementById('socialDescription').textContent =
+        socialScore >= 75 ? 'Vibrant neighborhood with many walkable cafes and restaurants. No car needed for daily living.' :
+        socialScore >= 50 ? 'Good selection of nearby dining and social venues.' :
+        'Fewer walkable amenities. May need to travel for dining and entertainment.';
+
+      // Grocery Score
+      const groceryScore = Math.round(rental['Grocery Score (Normalized)'] || 0);
+      const groceryBadge = getScoreBadgeClass(groceryScore);
+      document.getElementById('groceryScoreBadge').textContent = groceryScore;
+      document.getElementById('groceryScoreBadge').className = `score-value ${groceryBadge}`;
+      document.getElementById('groceryProgress').style.width = `${groceryScore}%`;
+      document.getElementById('groceryDescription').textContent =
+        groceryScore >= 75 ? 'Excellent access to budget-friendly grocery stores (Trader Joe\'s, Aldi, Costco). Can save $100-200/month.' :
+        groceryScore >= 50 ? 'Mix of budget and regular grocery stores nearby.' :
+        groceryScore > 0 ? 'Primarily premium grocery stores. Higher food costs expected.' :
+        'Grocery score not yet calculated for this location.';
+
+      // Summary
+      document.getElementById('summaryScore').textContent = overallScore;
+      document.getElementById('summaryText').textContent =
+        overallScore >= 75 ? 'This is an excellent choice for affordability! You\'ll save money on rent, transportation, and daily living costs compared to NYC averages.' :
+        overallScore >= 50 ? 'This rental offers good value. While not the cheapest, the location and amenities provide solid affordability for your total cost of living.' :
+        'This rental is at or above market rate. Consider if the location benefits are worth the premium, or explore other options for better value.';
+
+      // Weights
+      const weightsList = document.getElementById('weightsList');
+      weightsList.innerHTML = `
+        <li>Housing: ${Math.round(weights.affordability * 100)}%</li>
+        <li>Transportation: ${Math.round(weights.transit * 100)}%</li>
+        <li>Daily Living: ${Math.round(weights.social * 100)}%</li>
+        <li>Groceries: ${Math.round(weights.grocery * 100)}%</li>
+      `;
+
+      // Map
+      if (rental.Latitude && rental.Longitude) {
+        const map = L.map('rentalMap').setView([rental.Latitude, rental.Longitude], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors',
+          maxZoom: 18
+        }).addTo(map);
+
+        L.marker([rental.Latitude, rental.Longitude])
+          .addTo(map)
+          .bindPopup(`<strong>${rental.Address}</strong><br>$${rental['Rental Price'].toLocaleString()}/mo`)
+          .openPopup();
+      }
+    }
+
+    // Load on page load
+    window.addEventListener('DOMContentLoaded', loadRentalDetails);
+  </script>
+</body>
+</html>
