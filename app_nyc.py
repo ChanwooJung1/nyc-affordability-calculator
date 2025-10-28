@@ -7,7 +7,9 @@ import math
 app = Flask(__name__)
 
 # Load the NYC affordability data
-affordability_path = 'C:/Users/Joseph Chanwoo Jung/affordability-heatmap/nyc_affordability_scores.csv'
+# Use relative paths that work on both local and production
+base_dir = os.path.dirname(os.path.abspath(__file__))
+affordability_path = os.path.join(base_dir, 'nyc_affordability_scores.csv')
 affordability_df = pd.read_csv(affordability_path)
 
 # Load rental listings for test ZIP codes
@@ -15,7 +17,7 @@ rental_data = {}
 all_rentals = []
 test_zip_codes = ['10001', '11201', '11203']
 for zip_code in test_zip_codes:
-    csv_path = f'C:/Users/Joseph Chanwoo Jung/affordability-heatmap/nyc-affordability-calculator/{zip_code} Rental Listings.csv'
+    csv_path = os.path.join(base_dir, 'nyc-affordability-calculator', f'{zip_code} Rental Listings.csv')
     if os.path.exists(csv_path):
         df = pd.read_csv(csv_path)
         # Normalize column names
