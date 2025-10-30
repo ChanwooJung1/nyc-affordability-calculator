@@ -11,11 +11,13 @@ const RADIUS_METERS = 800; // 0.5 miles = approximately 800 meters
 
 /**
  * Fetch nearby coffee shops and restaurants using Google Places API (New)
+ * This version makes MULTIPLE requests at different radii to get better differentiation
  * @param {number} lat - Latitude of the location
  * @param {number} lng - Longitude of the location
+ * @param {number} radius - Search radius in meters (default 800m = 0.5 miles)
  * @returns {Promise<Array>} Array of unique places with name, address, types, and place_id
  */
-async function getNearbyPlaces(lat, lng) {
+async function getNearbyPlaces(lat, lng, radius = RADIUS_METERS) {
   // Validate API key
   if (!GOOGLE_PLACES_API_KEY || GOOGLE_PLACES_API_KEY === 'your_api_key_here') {
     throw new Error('Google Places API key not configured. Please set GOOGLE_PLACES_API_KEY in .env file');
@@ -34,7 +36,7 @@ async function getNearbyPlaces(lat, lng) {
           latitude: lat,
           longitude: lng
         },
-        radius: RADIUS_METERS
+        radius: radius
       }
     }
   };
@@ -92,27 +94,55 @@ async function getNearbyPlaces(lat, lng) {
 }
 
 /**
- * Calculate social score by counting unique coffee shops and restaurants
+ * Calculate social score using multi-tier search strategy
+ * This searches at 3 different radii and creates a weighted score to differentiate dense areas
+ * Formula: (within_200m × 3) + (within_400m × 2) + (within_800m × 1)
+ *
  * @param {number} lat - Latitude of the location
  * @param {number} lng - Longitude of the location
- * @returns {Promise<number>} Count of unique venues
+ * @returns {Promise<number>} Weighted social score
  */
 async function calculateSocialScore(lat, lng) {
   try {
-    const places = await getNearbyPlaces(lat, lng);
+    console.log(`\n=== Calculating Social Score for (${lat}, ${lng}) ===`);
 
-    // Deduplicate by place_id (though API typically returns unique results)
-    const uniquePlaces = new Map();
-    places.forEach(place => {
-      if (!uniquePlaces.has(place.place_id)) {
-        uniquePlaces.set(place.place_id, place);
+    // Search at 3 different radii to create differentiation
+    const radii = [
+      { distance: 200, weight: 3, label: 'immediate walkability' },  // ~2 blocks
+      { distance: 400, weight: 2, label: '5-min walk' },            // ~5 blocks
+      { distance: 800, weight: 1, label: '10-min walk' }            // ~10 blocks
+    ];
+
+    const allPlaces = new Map(); // Use Map to deduplicate by place_id
+    let weightedScore = 0;
+
+    for (const tier of radii) {
+      const places = await getNearbyPlaces(lat, lng, tier.distance);
+
+      // Count only NEW places not found in smaller radii
+      let newPlacesCount = 0;
+      places.forEach(place => {
+        if (!allPlaces.has(place.place_id)) {
+          allPlaces.set(place.place_id, place);
+          newPlacesCount++;
+        }
+      });
+
+      const tierScore = newPlacesCount * tier.weight;
+      weightedScore += tierScore;
+
+      console.log(`  ${tier.label} (${tier.distance}m): ${newPlacesCount} new venues × ${tier.weight} = ${tierScore} points`);
+
+      // Small delay between API calls to avoid rate limiting
+      if (tier !== radii[radii.length - 1]) {
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
-    });
+    }
 
-    const uniqueCount = uniquePlaces.size;
-    console.log(`Social score (raw count): ${uniqueCount} unique venues`);
+    console.log(`  Total unique venues: ${allPlaces.size}`);
+    console.log(`  Weighted social score: ${weightedScore}`);
 
-    return uniqueCount;
+    return weightedScore;
 
   } catch (error) {
     console.error(`Failed to calculate social score for (${lat}, ${lng}):`, error.message);

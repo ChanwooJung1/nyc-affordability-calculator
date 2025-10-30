@@ -76,12 +76,7 @@ function calculateAffordabilityIndex(
  * @returns {Array} Rentals with all scores calculated
  */
 function addScoresToRentals(rentals, weights = { affordability: 0.6, transit: 0.2, social: 0.1, grocery: 0.1 }, medianPrice = 3000) {
-  // First, normalize social and grocery scores to 0-100 scale
-  const rawSocialScores = rentals.map(r => r['Social Score'] || 0);
-  const maxSocialScore = Math.max(...rawSocialScores, 1);
-
-  const rawGroceryScores = rentals.map(r => r['Grocery Score'] || 0);
-  const maxGroceryScore = Math.max(...rawGroceryScores, 1);
+  // Social and Grocery scores are already normalized to 0-100 (no additional normalization needed)
 
   return rentals.map(rental => {
     // Use manually collected rental price
@@ -90,30 +85,28 @@ function addScoresToRentals(rentals, weights = { affordability: 0.6, transit: 0.
     // Calculate housing affordability score (60%)
     const affordabilityScore = calculateAffordabilityScore(rentalPrice, medianPrice);
 
-    // Normalize social score to 0-100 (daily living affordability - 10%)
-    const normalizedSocialScore = Math.round((rental['Social Score'] / maxSocialScore) * 100);
-
-    // Normalize grocery score to 0-100 (grocery affordability - 10%)
-    const normalizedGroceryScore = Math.round((rental['Grocery Score'] / maxGroceryScore) * 100);
+    // Social and Grocery scores are already 0-100 (integers, no decimals)
+    const socialScore = parseInt(rental['Social Score']) || 0;
+    const groceryScore = parseInt(rental['Grocery Score']) || 0;
 
     // Get transit score - already 0-100 (transportation affordability - 20%)
-    const transitScore = rental['Transit Score'] || 0;
+    const transitScore = parseInt(rental['Transit Score']) || 0;
 
     // Calculate overall Affordability Index (60/20/10/10)
     const affordabilityIndex = calculateAffordabilityIndex(
       affordabilityScore,
       transitScore,
-      normalizedSocialScore,
-      normalizedGroceryScore,
+      socialScore,
+      groceryScore,
       weights
     );
 
-    // Add all scores to rental object
+    // Add all scores to rental object (all integers, no decimals)
     return {
       ...rental,
       'Affordability Score': affordabilityScore,
-      'Social Score (Normalized)': normalizedSocialScore,
-      'Grocery Score (Normalized)': normalizedGroceryScore,
+      'Social Score (Normalized)': socialScore,
+      'Grocery Score (Normalized)': groceryScore,
       'Affordability Index': affordabilityIndex
     };
   });

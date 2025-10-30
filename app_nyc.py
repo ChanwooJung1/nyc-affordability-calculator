@@ -146,11 +146,9 @@ def calculate_affordability_scores(rentals, weights):
         # Housing affordability (0-100, lower price = higher score)
         housing_score = max(0, min(100, 100 - ((price - median_price) / median_price * 100)))
 
-        # Normalize social score (assuming raw count, normalize to 0-100)
-        social_normalized = min(100, (social / 20) * 100) if social > 0 else 0
-
-        # Normalize grocery score (assuming 50-150 range)
-        grocery_normalized = min(100, max(0, grocery)) if grocery > 0 else 0
+        # Social and Grocery scores are already normalized to 0-100 (no decimals needed)
+        social_normalized = int(social) if social > 0 else 0
+        grocery_normalized = int(grocery) if grocery > 0 else 0
 
         # Calculate overall affordability index
         affordability_index = (
@@ -160,12 +158,12 @@ def calculate_affordability_scores(rentals, weights):
             grocery_normalized * weights['grocery']
         )
 
-        # Add calculated scores to rental
+        # Add calculated scores to rental (all integers, no decimals)
         rental_copy = rental.copy()
-        rental_copy['Affordability Score'] = round(housing_score, 1)
-        rental_copy['Social Score (Normalized)'] = round(social_normalized, 1)
-        rental_copy['Grocery Score (Normalized)'] = round(grocery_normalized, 1)
-        rental_copy['Affordability Index'] = round(affordability_index, 1)
+        rental_copy['Affordability Score'] = int(round(housing_score))
+        rental_copy['Social Score (Normalized)'] = social_normalized
+        rental_copy['Grocery Score (Normalized)'] = grocery_normalized
+        rental_copy['Affordability Index'] = int(round(affordability_index))
 
         scored_rentals.append(rental_copy)
 
