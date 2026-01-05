@@ -15,6 +15,16 @@ const PORT = process.env.PORT || 3000;
 // Serve static files from public directory
 app.use(express.static('public'));
 
+// Homepage - Heatmap
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'heatmap.html'));
+});
+
+// Rentals page
+app.get('/rentals', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'rentals.html'));
+});
+
 // Route for individual rental details page
 app.get('/rental', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'rental.html'));
@@ -145,6 +155,67 @@ app.get('/api/rental', async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching rental:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * API endpoint to get heatmap data
+ */
+app.get('/api/heatmap', async (req, res) => {
+  try {
+    const fs = require('fs');
+    const Papa = require('papaparse');
+
+    // Read affordability scores CSV
+    const csvContent = fs.readFileSync(path.join(__dirname, 'nyc_affordability_scores.csv'), 'utf8');
+    const result = Papa.parse(csvContent, {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true
+    });
+
+    const data = result.data;
+
+    // Prepare data arrays for the heatmap
+    const zipCodes = data.map(row => row.zip_code.toString());
+    const overallScores = data.map(row => row.overall_score || 0);
+    const housingScores = data.map(row => row.housing_score || 0);
+    const socialScores = data.map(row => row.social_score || 0);
+    const transitScores = data.map(row => row.transit_score || 0);
+    const groceryScores = data.map(row => row.grocery_score || 0);
+    const boroughs = data.map(row => row.borough || '');
+    const latitudes = data.map(row => row.lat || 40.7128);
+    const longitudes = data.map(row => row.lng || -74.0060);
+    const rentalCounts = data.map(row => row.rental_count || 0);
+
+    // Normalize scores for heatmap coloring (0-1 scale)
+    const minScore = Math.min(...overallScores);
+    const maxScore = Math.max(...overallScores);
+    const normalizedScores = overallScores.map(score =>
+      (score - minScore) / (maxScore - minScore + 0.0001)
+    );
+
+    res.json({
+      success: true,
+      zipCodes,
+      overallScores,
+      housingScores,
+      socialScores,
+      transitScores,
+      groceryScores,
+      boroughs,
+      latitudes,
+      longitudes,
+      normalizedScores,
+      rentalCounts
+    });
+
+  } catch (error) {
+    console.error('Error fetching heatmap data:', error);
     res.status(500).json({
       success: false,
       error: error.message
