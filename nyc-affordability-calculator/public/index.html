@@ -457,9 +457,6 @@
           <label for="zipFilter" style="display: block; margin-bottom: 8px; font-size: 14px; color: #666;">Neighborhood</label>
           <select class="form-select" id="zipFilter">
             <option value="">All ZIP Codes</option>
-            <option value="10001">10001 - Chelsea/Garment District</option>
-            <option value="11201">11201 - Brooklyn Heights</option>
-            <option value="11203">11203 - East Flatbush</option>
           </select>
         </div>
         <div class="col-md-4">
@@ -543,6 +540,29 @@
       if (score >= 75) return 'score-high';
       if (score >= 50) return 'score-medium';
       return 'score-low';
+    }
+
+    // Load ZIP codes for filter
+    async function loadZipCodes() {
+      try {
+        const response = await fetch('/api/rentals');
+        const data = await response.json();
+
+        if (data.success && data.rentals) {
+          // Extract unique ZIP codes
+          const zipCodes = [...new Set(data.rentals.map(r => r['Zip Code']))].sort();
+
+          const zipFilter = document.getElementById('zipFilter');
+          zipCodes.forEach(zip => {
+            const option = document.createElement('option');
+            option.value = zip;
+            option.textContent = zip;
+            zipFilter.appendChild(option);
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load ZIP codes:', error);
+      }
     }
 
     // Load rentals from API
@@ -675,14 +695,17 @@
     }
 
     // Load rentals on page load
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Load ZIP codes first
+      await loadZipCodes();
+
       // Set ZIP filter if provided in URL
       if (zipFromUrl) {
         const zipFilter = document.getElementById('zipFilter');
         zipFilter.value = zipFromUrl;
 
         // Add visual highlight to show ZIP was pre-selected
-        const header = document.querySelector('.header');
+        const header = document.querySelector('.header .container');
         header.innerHTML = `
           <h1>NYC Affordability Calculator</h1>
           <p class="mb-0">Viewing rentals in ZIP code <strong>${zipFromUrl}</strong></p>
