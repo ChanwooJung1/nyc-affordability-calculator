@@ -658,7 +658,7 @@
 
         // Load GeoJSON and color by score
         function loadGeoJSON() {
-            fetch('/static/ny_zip_codes.json')
+            fetch('/ny_zip_codes.json')
                 .then(response => response.json())
                 .then(geojson => {
                     if (geoJsonLayer) {
