@@ -634,12 +634,13 @@
             const div = L.DomUtil.create('div', 'legend');
             div.innerHTML = `
                 <div class="legend-title">Affordability Score (0-100)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #00C853"></span> 90-100 (Excellent)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #7CB342"></span> 70-89 (Good)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #FDD835"></span> 50-69 (Average)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #FB8C00"></span> 30-49 (Below Average)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #E53935"></span> 10-29 (Poor)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #C62828"></span> 0-9 (Very Poor)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #00C853"></span> 85-100 (Excellent)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #43A047"></span> 70-84 (Very Good)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #7CB342"></span> 55-69 (Good)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #9CCC65"></span> 45-54 (Average)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #FDD835"></span> 35-44 (Fair)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #FB8C00"></span> 18-34 (Below Average)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #E53935"></span> 0-17 (Poor)</div>
             `;
             return div;
         };
@@ -842,22 +843,22 @@
                 .catch(error => console.error('Error loading GeoJSON:', error));
         }
 
-        // Vibrant color gradient for 0-100 scale (green = affordable, red = expensive)
+        // Vibrant color gradient for 0-100 scale (more green, optimistic view)
         function getColorByScore(score) {
             // Ensure score is between 0-100
             score = Math.max(0, Math.min(100, score));
 
-            // More granular, vibrant color scale
-            if (score >= 90) return '#00C853';      // Bright green (90-100)
-            if (score >= 80) return '#43A047';      // Green (80-90)
-            if (score >= 70) return '#7CB342';      // Light green (70-80)
-            if (score >= 60) return '#C0CA33';      // Lime (60-70)
-            if (score >= 50) return '#FDD835';      // Yellow (50-60)
-            if (score >= 40) return '#FFB300';      // Amber (40-50)
-            if (score >= 30) return '#FB8C00';      // Orange (30-40)
-            if (score >= 20) return '#F4511E';      // Deep orange (20-30)
-            if (score >= 10) return '#E53935';      // Red (10-20)
-            return '#C62828';                        // Dark red (0-10)
+            // Extended green range for more positive visualization
+            if (score >= 85) return '#00C853';      // Bright green (85-100)
+            if (score >= 70) return '#43A047';      // Green (70-85)
+            if (score >= 55) return '#7CB342';      // Light green (55-70)
+            if (score >= 45) return '#9CCC65';      // Lime green (45-55)
+            if (score >= 35) return '#FDD835';      // Yellow (35-45)
+            if (score >= 25) return '#FFB300';      // Amber (25-35)
+            if (score >= 18) return '#FB8C00';      // Orange (18-25)
+            if (score >= 12) return '#F4511E';      // Deep orange (12-18)
+            if (score >= 6) return '#E53935';       // Red (6-12)
+            return '#C62828';                        // Dark red (0-6)
         }
 
         // Panel management functions
