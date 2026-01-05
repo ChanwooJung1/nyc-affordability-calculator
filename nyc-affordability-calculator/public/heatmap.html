@@ -628,17 +628,18 @@
             minZoom: 10
         }).addTo(map);
 
-        // Add legend with improved color gradient (red->yellow->green)
+        // Add vibrant legend showing full 0-100 scale
         const legend = L.control({position: 'bottomleft'});
         legend.onAdd = function (map) {
             const div = L.DomUtil.create('div', 'legend');
             div.innerHTML = `
-                <div class="legend-title">Affordability Score</div>
-                <div class="legend-item"><span class="legend-color" style="background: #2e7d32"></span> 80-100 (Excellent)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #7cb342"></span> 60-80 (Good)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #fdd835"></span> 40-60 (Moderate)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #fb8c00"></span> 20-40 (Fair)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #e53935"></span> 0-20 (Poor)</div>
+                <div class="legend-title">Affordability Score (0-100)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #00C853"></span> 90-100 (Excellent)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #7CB342"></span> 70-89 (Good)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #FDD835"></span> 50-69 (Average)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #FB8C00"></span> 30-49 (Below Average)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #E53935"></span> 10-29 (Poor)</div>
+                <div class="legend-item"><span class="legend-color" style="background: #C62828"></span> 0-9 (Very Poor)</div>
             `;
             return div;
         };
@@ -841,13 +842,22 @@
                 .catch(error => console.error('Error loading GeoJSON:', error));
         }
 
-        // Improved color gradient: green (affordable) -> yellow -> red (expensive)
+        // Vibrant color gradient for 0-100 scale (green = affordable, red = expensive)
         function getColorByScore(score) {
-            return score > 80 ? '#2e7d32' :  // Dark green (excellent)
-                   score > 60 ? '#7cb342' :  // Light green (good)
-                   score > 40 ? '#fdd835' :  // Yellow (moderate)
-                   score > 20 ? '#fb8c00' :  // Orange (fair)
-                                '#e53935';   // Red (poor)
+            // Ensure score is between 0-100
+            score = Math.max(0, Math.min(100, score));
+
+            // More granular, vibrant color scale
+            if (score >= 90) return '#00C853';      // Bright green (90-100)
+            if (score >= 80) return '#43A047';      // Green (80-90)
+            if (score >= 70) return '#7CB342';      // Light green (70-80)
+            if (score >= 60) return '#C0CA33';      // Lime (60-70)
+            if (score >= 50) return '#FDD835';      // Yellow (50-60)
+            if (score >= 40) return '#FFB300';      // Amber (40-50)
+            if (score >= 30) return '#FB8C00';      // Orange (30-40)
+            if (score >= 20) return '#F4511E';      // Deep orange (20-30)
+            if (score >= 10) return '#E53935';      // Red (10-20)
+            return '#C62828';                        // Dark red (0-10)
         }
 
         // Panel management functions
