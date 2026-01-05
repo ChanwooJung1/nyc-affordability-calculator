@@ -1,11 +1,11 @@
 services:
   - type: web
     name: nyc-affordability-calculator
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app_nyc:app
+    env: node
+    buildCommand: cd nyc-affordability-calculator && npm install
+    startCommand: cd nyc-affordability-calculator && npm start
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
+      - key: NODE_VERSION
+        value: 18.x
       - key: GOOGLE_PLACES_API_KEY
         sync: false
