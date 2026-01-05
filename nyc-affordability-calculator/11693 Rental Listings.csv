@@ -1,0 +1,6 @@
+address,zip,price,lat,lng,url,bedrooms,bathrooms,sqft,Transit Score,Social Score,Grocery Score
+348 Beach 86th St FLOOR 3,11693,1750,40.590282,-73.8113,,1,1,1000,28,35,15
+22 E 9th Rd,11693,3777,40.606403,-73.81853,,3,1,1266,43,8,10
+317 Beach 87th St FLOOR 2,11693,3300,40.589146,-73.812584,,3,2,900,32,44,20
+79-14 Rockaway Beach Blvd #3L,11693,2400,40.588184,-73.80533,,1,1,658,29,20,25
+344 Beach 87th St #02,11693,2755,40.58994,-73.812164,,2,1,965,31,35,15

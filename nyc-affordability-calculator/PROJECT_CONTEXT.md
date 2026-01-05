@@ -27,20 +27,57 @@ Located in: `brooklyn-rentals/` subfolder
 - `.env` - **Contains Google Places API key, Distance Matrix API key, and RentCast API key** (not committed to Git)
 - `README.md` - Full documentation
 
-## Current Status (as of October 26, 2025)
+## Current Status (as of January 3, 2026)
 
-✅ All code files created and organized in `brooklyn-rentals/` subfolder
-✅ Google Places API and Distance Matrix API keys obtained and added to `.env` file
-✅ Walk Score replaced with Transit Score implementation
-✅ Social scores verified and working (all 20 locations have 20+ venues nearby)
-✅ RentCast API integrated for real rent price data
-✅ 28 sample rentals across 3 NYC ZIP codes (10001, 11201, 11203)
-✅ **NEW: Flask heatmap integrated with Node.js affordability calculator**
-✅ **NEW: Grocery scores updated for ZIP 11201 (10 rentals)**
-⏳ **TODO: Update grocery scores for ZIP codes 10001 and 11203**
-⏳ **TODO: Update transit scores for all rentals across all 3 ZIP codes**
+✅ **Scraped 1,789 rental listings** across 190 NYC zip codes (all 5 boroughs)
+✅ **ScraperAPI integration** - Automated rental data collection from Zillow
+✅ **Data quality filtering** - Top 10 listings per zip code, anomalies removed
+✅ **Server running** at http://localhost:3000 with all 1,789 listings
+✅ **Google APIs tested and working** (Distance Matrix, Places API)
+⏳ **TODO: Calculate Transit Scores** (~1.5 hours, ~$27)
+⏳ **TODO: Calculate Daily Living Scores** (~2.5 hours, ~$61)
+⏳ **TODO: Calculate Grocery Scores** (~1.5 hours, ~$30)
 
-## What Was Built in Current Session (October 26, 2025)
+### Coverage
+- 🏙️ Manhattan: 45 zip codes
+- 🌆 Bronx: 25 zip codes
+- 🌉 Brooklyn: 50 zip codes
+- 🏘️ Queens: 70 zip codes
+- 🏖️ Staten Island: 14 zip codes
+
+## What Was Built in Current Session (January 3, 2026)
+
+1. **Automated Rental Data Collection**
+   - Built web scraper using ScraperAPI to bypass Zillow's anti-bot protection
+   - Scraped 4,697 raw listings from 204 NYC zip codes
+   - Used 190 ScraperAPI requests (810 free requests remaining)
+   - Script: `scrapeWithAPI.py` with API key configured
+
+2. **Data Quality Filtering**
+   - Created `filterTop10PerZip.js` to remove anomalies
+   - Filtered down to 1,789 quality listings (top 10 per zip)
+   - Removed price outliers (<$500 or >$20,000)
+   - Ensured diverse price ranges (budget, mid-range, luxury)
+   - 61.9% reduction in dataset size
+
+3. **System Updates**
+   - Updated `dataHandler.js` to load all 190 zip codes
+   - Server tested and verified with 1,789 listings
+   - All listings have complete data (address, price, coordinates)
+
+4. **Cost Analysis**
+   - Original dataset (4,697): ~$310 API cost, 5-6 hours
+   - Filtered dataset (1,789): ~$118 API cost, 2.3 hours
+   - Breakdown: Transit $27, Social $61, Grocery $30
+
+5. **Files Created**
+   - `scrapeWithAPI.py` - ScraperAPI-based Zillow scraper
+   - `scrapeAllZips.py` - Batch processor for all zip codes
+   - `filterTop10PerZip.js` - Data quality filter
+   - `all_nyc_zipcodes.txt` - Complete NYC zip code list
+   - 190 individual CSV files (one per zip code)
+
+## What Was Built in Previous Session (October 26, 2025)
 
 1. **Integrated Flask Heatmap with Node.js Affordability Calculator**
    - Enhanced Flask landing page with compelling affordability messaging
@@ -144,22 +181,33 @@ The parent folder (`affordability-heatmap/`) contains a separate **Python-based*
 - Note: New API keys may take 15-30 minutes to propagate
 - RentCast free tier includes monthly API call limits - monitor usage at https://app.rentcast.io/
 
-## TODO: Tasks to Complete
+## TODO: Next Steps
 
-1. **Update Grocery Scores for Remaining ZIP Codes**
-   - Run grocery score update for `10001 Rental Listings.csv` (10 rentals)
-   - Run grocery score update for `11203 Rental Listings.csv` (8 rentals)
-   - Note: Currently only ZIP 11201 has grocery scores populated
+**Calculate Affordability Scores for 1,789 listings** (~2.3 hours total, ~$118 cost)
 
-2. **Update Transit Scores for All Rentals**
-   - Run `updateTransitScores.js` for all 28 rentals across all 3 ZIP codes
-   - Currently all transit scores are 0
-   - This will calculate commute times to key NYC destinations
+Run these scripts in order:
 
-3. **Consolidate Rental Data (Optional)**
-   - The main `rentals.csv` currently only contains ZIP 11201 data
-   - Individual ZIP files exist separately: `10001 Rental Listings.csv`, `11201 Rental Listings.csv`, `11203 Rental Listings.csv`
-   - Consider consolidating all into `rentals.csv` for unified processing
+```bash
+cd nyc-affordability-calculator
+
+# 1. Transit scores (~1.5 hours, ~$27)
+node updateTransitScores.js
+
+# 2. Daily Living scores (~2.5 hours, ~$61)
+node updateDailyLivingScores.js
+
+# 3. Grocery scores (~1.5 hours, ~$30)
+node updateGroceryScores.js
+
+# 4. Restart server to load updated scores
+npm start
+```
+
+**Before running:**
+- Check Google Cloud billing status (free trial vs paid account)
+- Confirm $118 API cost is acceptable
+- Scripts run in background - can leave overnight
+- All Google APIs tested and verified working
 
 ## Next Steps to Run the App
 

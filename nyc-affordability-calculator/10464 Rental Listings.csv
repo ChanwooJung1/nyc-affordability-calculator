@@ -1,0 +1,6 @@
+address,zip,price,lat,lng,url,bedrooms,bathrooms,sqft,Transit Score,Social Score,Grocery Score
+119 Rochelle St #2,10464,3600,40.8387,-73.78439,,3,2,1742,0,24,0
+34 Carroll St #B,10464,2800,40.844925,-73.78905,,2,1,800,0,29,20
+30 Fordham St #2,10464,2850,40.846416,-73.789566,,2,1,800,0,30,20
+244 Bowne St FLOOR 1,10464,3100,40.851425,-73.78517,,2,2,,0,29,20
+10 Pell Pl,10464,4700,40.841698,-73.78758,,3,3,1100,0,23,5

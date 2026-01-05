@@ -8,12 +8,23 @@
     "dev": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0",
     "papaparse": "^5.4.1",
-    "node-fetch": "^2.7.0"
+    "puppeteer": "^24.34.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
-  "keywords": ["rental", "affordability", "nyc", "new-york-city", "places-api", "heatmap", "cost-of-living"],
+  "keywords": [
+    "rental",
+    "affordability",
+    "nyc",
+    "new-york-city",
+    "places-api",
+    "heatmap",
+    "cost-of-living"
+  ],
   "author": "Joseph Chanwoo Jung",
   "license": "MIT"
 }
