@@ -27,16 +27,16 @@ Located in: `brooklyn-rentals/` subfolder
 - `.env` - **Contains Google Places API key, Distance Matrix API key, and RentCast API key** (not committed to Git)
 - `README.md` - Full documentation
 
-## Current Status (as of January 3, 2026)
+## Current Status (as of January 8, 2026)
 
 ✅ **Scraped 1,789 rental listings** across 190 NYC zip codes (all 5 boroughs)
 ✅ **ScraperAPI integration** - Automated rental data collection from Zillow
 ✅ **Data quality filtering** - Top 10 listings per zip code, anomalies removed
-✅ **Server running** at http://localhost:3000 with all 1,789 listings
+✅ **All scores calculated** - Transit, Daily Living, and Grocery scores for all 1,789 listings
+✅ **ZIP code aggregates generated** - Median rent and average scores per ZIP code
+✅ **Server running locally** at http://localhost:3000 with full heatmap and rentals
 ✅ **Google APIs tested and working** (Distance Matrix, Places API)
-⏳ **TODO: Calculate Transit Scores** (~1.5 hours, ~$27)
-⏳ **TODO: Calculate Daily Living Scores** (~2.5 hours, ~$61)
-⏳ **TODO: Calculate Grocery Scores** (~1.5 hours, ~$30)
+⏳ **TODO: Deploy to live website** (nyaffordability.online)
 
 ### Coverage
 - 🏙️ Manhattan: 45 zip codes
@@ -45,7 +45,33 @@ Located in: `brooklyn-rentals/` subfolder
 - 🏘️ Queens: 70 zip codes
 - 🏖️ Staten Island: 14 zip codes
 
-## What Was Built in Current Session (January 3, 2026)
+## What Was Built in Current Session (January 8, 2026)
+
+1. **ZIP Code Aggregate Score Calculation**
+   - Ran `calculateZipCodeScores.js` to generate aggregate data for heatmap
+   - Loaded 1,789 individual rental listings from 190 NYC ZIP codes
+   - Calculated per-ZIP aggregates:
+     - Median Rent
+     - Average Transit Score
+     - Average Daily Living Score
+     - Average Grocery Score
+     - Overall Affordability Index (weighted 60/20/10/10)
+   - Created `zipcode_scores.csv` with complete data for 190 ZIP codes
+
+2. **Updated Server for Heatmap Data**
+   - Modified `/api/heatmap` endpoint to read from `zipcode_scores.csv`
+   - Added borough classification based on ZIP code patterns
+   - Calculate housing scores from median rent (lower rent = higher score)
+   - Verified all scores are populated with real data (no more zeros)
+
+3. **Current App Status**
+   - Server running locally at http://localhost:3000
+   - Heatmap shows all 190 NYC ZIP codes with real affordability data
+   - Individual rental listings fully scored and filterable by ZIP
+   - Top affordable ZIPs: 10451 (Bronx), 11208 (Brooklyn), 11405 (Queens) - all scoring 67/100
+   - **NOT YET DEPLOYED** to live website (nyaffordability.online)
+
+## What Was Built in Previous Session (January 3, 2026)
 
 1. **Automated Rental Data Collection**
    - Built web scraper using ScraperAPI to bypass Zillow's anti-bot protection
@@ -183,31 +209,26 @@ The parent folder (`affordability-heatmap/`) contains a separate **Python-based*
 
 ## TODO: Next Steps
 
-**Calculate Affordability Scores for 1,789 listings** (~2.3 hours total, ~$118 cost)
+**Deploy to Live Website** (nyaffordability.online)
 
-Run these scripts in order:
+The app is fully functional locally with all data calculated. Next steps:
 
-```bash
-cd nyc-affordability-calculator
+1. **Prepare for deployment:**
+   - Verify all CSV files are present (190 individual ZIP files + zipcode_scores.csv)
+   - Test heatmap and rentals pages locally
+   - Confirm all API endpoints working
 
-# 1. Transit scores (~1.5 hours, ~$27)
-node updateTransitScores.js
+2. **Deploy to production:**
+   - Upload all files to web hosting
+   - Configure environment variables (.env with API keys)
+   - Test live site functionality
+   - Update DNS if needed
 
-# 2. Daily Living scores (~2.5 hours, ~$61)
-node updateDailyLivingScores.js
-
-# 3. Grocery scores (~1.5 hours, ~$30)
-node updateGroceryScores.js
-
-# 4. Restart server to load updated scores
-npm start
-```
-
-**Before running:**
-- Check Google Cloud billing status (free trial vs paid account)
-- Confirm $118 API cost is acceptable
-- Scripts run in background - can leave overnight
-- All Google APIs tested and verified working
+3. **Post-deployment:**
+   - Verify heatmap loads all 190 ZIP codes
+   - Test ZIP code drill-down to individual rentals
+   - Monitor API usage and costs
+   - Plan for periodic data updates (monthly/quarterly)
 
 ## Next Steps to Run the App
 
@@ -267,13 +288,20 @@ npm start
 
 ## Key Features
 
-- ✅ Interactive sliders to adjust priority weights (affordability, transit, social)
-- ✅ Filter by zip code (11201 or 11215)
-- ✅ Sort by any score (Vibrant, Price, Transit, Social)
+- ✅ Interactive NYC heatmap with 190 ZIP codes color-coded by affordability
+- ✅ Click ZIP codes to view detailed rental listings
+- ✅ 1,789 real rental listings scraped from Zillow
+- ✅ Four-factor scoring system:
+  - Housing Affordability (60%) - rent vs median
+  - Transportation (20%) - transit times to key destinations
+  - Daily Living (10%) - walkable cafes/restaurants
+  - Grocery Access (10%) - budget vs premium stores
+- ✅ Interactive weight sliders for personalized scoring
+- ✅ Filter by borough (Manhattan, Brooklyn, Queens, Bronx, Staten Island)
+- ✅ Sort rentals by any score or price
 - ✅ Real-time score recalculation
-- ✅ Clean Bootstrap UI with 🚇 transit score display
-- ✅ Sample data for 20 one-bedroom rentals
-- ✅ Google Places API integration for social venues
+- ✅ Clean, modern UI with full-screen map
+- ✅ Google Places API integration for social venues and groceries
 - ✅ Google Distance Matrix API for transit accessibility
 
 ## Deadlines

@@ -170,8 +170,19 @@ app.get('/api/heatmap', async (req, res) => {
     const fs = require('fs');
     const Papa = require('papaparse');
 
-    // Read affordability scores CSV
-    const csvContent = fs.readFileSync(path.join(__dirname, 'nyc_affordability_scores.csv'), 'utf8');
+    // Helper function to determine borough from ZIP code
+    function getBorough(zipCode) {
+      const zip = zipCode.toString();
+      if (zip.startsWith('100') || zip.startsWith('101') || zip.startsWith('102')) return 'Manhattan';
+      if (zip.startsWith('112')) return 'Brooklyn';
+      if (zip.startsWith('113') || zip.startsWith('114') || zip.startsWith('116')) return 'Queens';
+      if (zip.startsWith('104')) return 'Bronx';
+      if (zip.startsWith('103')) return 'Staten Island';
+      return 'Unknown';
+    }
+
+    // Read ZIP code aggregate scores CSV
+    const csvContent = fs.readFileSync(path.join(__dirname, 'zipcode_scores.csv'), 'utf8');
     const result = Papa.parse(csvContent, {
       header: true,
       dynamicTyping: true,
@@ -181,16 +192,28 @@ app.get('/api/heatmap', async (req, res) => {
     const data = result.data;
 
     // Prepare data arrays for the heatmap
-    const zipCodes = data.map(row => row.zip_code.toString());
-    const overallScores = data.map(row => row.overall_score || 0);
-    const housingScores = data.map(row => row.housing_score || 0);
-    const socialScores = data.map(row => row.social_score || 0);
-    const transitScores = data.map(row => row.transit_score || 0);
-    const groceryScores = data.map(row => row.grocery_score || 0);
-    const boroughs = data.map(row => row.borough || '');
-    const latitudes = data.map(row => row.lat || 40.7128);
-    const longitudes = data.map(row => row.lng || -74.0060);
-    const rentalCounts = data.map(row => row.rental_count || 0);
+    const zipCodes = data.map(row => row['Zip Code'].toString());
+    const overallScores = data.map(row => row['Affordability Index'] || 0);
+    const medianRents = data.map(row => row['Median Rent'] || 0);
+    const socialScores = data.map(row => row['Avg Daily Living Score'] || 0);
+    const transitScores = data.map(row => row['Avg Transit Score'] || 0);
+    const groceryScores = data.map(row => row['Avg Grocery Score'] || 0);
+    const latitudes = data.map(row => row['Latitude'] || 40.7128);
+    const longitudes = data.map(row => row['Longitude'] || -74.0060);
+    const rentalCounts = data.map(row => row['Listing Count'] || 0);
+    const boroughs = zipCodes.map(zip => getBorough(zip));
+
+    // Calculate housing scores from median rent (normalize to 0-100)
+    const globalMedianRent = 3100; // From calculateZipCodeScores.js
+    const housingScores = medianRents.map(rent => {
+      if (rent <= 0) return 0;
+      // Lower rent = higher score
+      // 50% of median = 100, median = 50, 150% of median = 0
+      const ratio = rent / globalMedianRent;
+      if (ratio <= 0.5) return 100;
+      if (ratio >= 1.5) return 0;
+      return Math.round(100 - ((ratio - 0.5) * 100));
+    });
 
     // Normalize scores for heatmap coloring (0-1 scale)
     const minScore = Math.min(...overallScores);
@@ -204,6 +227,7 @@ app.get('/api/heatmap', async (req, res) => {
       zipCodes,
       overallScores,
       housingScores,
+      medianRents,
       socialScores,
       transitScores,
       groceryScores,
