@@ -191,29 +191,18 @@ app.get('/api/heatmap', async (req, res) => {
 
     const data = result.data;
 
-    // Prepare data arrays for the heatmap
+    // Prepare data arrays for the heatmap (all scores are already normalized to 0-100)
     const zipCodes = data.map(row => row['Zip Code'].toString());
     const overallScores = data.map(row => row['Affordability Index'] || 0);
     const medianRents = data.map(row => row['Median Rent'] || 0);
-    const socialScores = data.map(row => row['Avg Daily Living Score'] || 0);
+    const housingScores = data.map(row => row['Avg Housing Score'] || 0);
     const transitScores = data.map(row => row['Avg Transit Score'] || 0);
+    const socialScores = data.map(row => row['Avg Daily Living Score'] || 0);
     const groceryScores = data.map(row => row['Avg Grocery Score'] || 0);
     const latitudes = data.map(row => row['Latitude'] || 40.7128);
     const longitudes = data.map(row => row['Longitude'] || -74.0060);
     const rentalCounts = data.map(row => row['Listing Count'] || 0);
     const boroughs = zipCodes.map(zip => getBorough(zip));
-
-    // Calculate housing scores from median rent (normalize to 0-100)
-    const globalMedianRent = 3100; // From calculateZipCodeScores.js
-    const housingScores = medianRents.map(rent => {
-      if (rent <= 0) return 0;
-      // Lower rent = higher score
-      // 50% of median = 100, median = 50, 150% of median = 0
-      const ratio = rent / globalMedianRent;
-      if (ratio <= 0.5) return 100;
-      if (ratio >= 1.5) return 0;
-      return Math.round(100 - ((ratio - 0.5) * 100));
-    });
 
     // Normalize scores for heatmap coloring (0-1 scale)
     const minScore = Math.min(...overallScores);

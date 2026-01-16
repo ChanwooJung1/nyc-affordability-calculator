@@ -93,13 +93,15 @@ async function calculateZipCodeAggregates() {
 
       // Extract all values
       const rentPrices = rentalsInZip.map(r => r['Rental Price']);
-      const transitScores = rentalsInZip.map(r => r['Transit Score'] || 0);
+      const housingScores = rentalsInZip.map(r => r['Affordability Score'] || 0);
+      const transitScores = rentalsInZip.map(r => r['Transit Score (Normalized)'] || 0);
       const dailyLivingScores = rentalsInZip.map(r => r['Social Score (Normalized)'] || 0);
       const groceryScores = rentalsInZip.map(r => r['Grocery Score (Normalized)'] || 0);
       const affordabilityIndexes = rentalsInZip.map(r => r['Affordability Index'] || 0);
 
-      // Calculate aggregates
+      // Calculate aggregates (all scores are already normalized to 0-100)
       const medianRent = calculateMedian(rentPrices);
+      const avgHousingScore = Math.round(calculateAverage(housingScores));
       const avgTransitScore = Math.round(calculateAverage(transitScores));
       const avgDailyLivingScore = Math.round(calculateAverage(dailyLivingScores));
       const avgGroceryScore = Math.round(calculateAverage(groceryScores));
@@ -116,6 +118,7 @@ async function calculateZipCodeAggregates() {
         'Longitude': lng,
         'Listing Count': rentalsInZip.length,
         'Median Rent': Math.round(medianRent),
+        'Avg Housing Score': avgHousingScore,
         'Avg Transit Score': avgTransitScore,
         'Avg Daily Living Score': avgDailyLivingScore,
         'Avg Grocery Score': avgGroceryScore,
@@ -125,9 +128,10 @@ async function calculateZipCodeAggregates() {
       console.log(`${zip}:`);
       console.log(`  Listings: ${rentalsInZip.length}`);
       console.log(`  Median Rent: $${Math.round(medianRent)}`);
-      console.log(`  Avg Transit: ${avgTransitScore}`);
-      console.log(`  Avg Daily Living: ${avgDailyLivingScore}`);
-      console.log(`  Avg Grocery: ${avgGroceryScore}`);
+      console.log(`  Avg Housing: ${avgHousingScore} (normalized)`);
+      console.log(`  Avg Transit: ${avgTransitScore} (normalized)`);
+      console.log(`  Avg Daily Living: ${avgDailyLivingScore} (normalized)`);
+      console.log(`  Avg Grocery: ${avgGroceryScore} (normalized)`);
       console.log(`  Affordability Index: ${overallAffordabilityIndex}`);
       console.log('');
     });
@@ -158,7 +162,8 @@ async function calculateZipCodeAggregates() {
     console.log('\n=== Top 5 Most Affordable Zip Codes ===');
     zipCodeScores.slice(0, 5).forEach((zip, index) => {
       console.log(`${index + 1}. Zip ${zip['Zip Code']}: Affordability Index = ${zip['Affordability Index']}`);
-      console.log(`   Median Rent: $${zip['Median Rent']}, Transit: ${zip['Avg Transit Score']}, Daily Living: ${zip['Avg Daily Living Score']}, Grocery: ${zip['Avg Grocery Score']}`);
+      console.log(`   Median Rent: $${zip['Median Rent']}`);
+      console.log(`   Housing: ${zip['Avg Housing Score']}, Transit: ${zip['Avg Transit Score']}, Daily Living: ${zip['Avg Daily Living Score']}, Grocery: ${zip['Avg Grocery Score']}`);
     });
 
     console.log('\n✓ Zip code aggregate scores ready for heatmap!');
