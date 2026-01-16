@@ -232,11 +232,11 @@
             border-radius: 4px;
         }
 
-        /* Legend - bottom left */
+        /* Legend - bottom right */
         .legend {
             position: fixed;
             bottom: 20px;
-            left: 20px;
+            right: 20px;
             background: white;
             padding: 15px;
             border-radius: 10px;
@@ -629,7 +629,7 @@
         }).addTo(map);
 
         // Add balanced legend showing full 0-100 scale
-        const legend = L.control({position: 'bottomleft'});
+        const legend = L.control({position: 'bottomright'});
         legend.onAdd = function (map) {
             const div = L.DomUtil.create('div', 'legend');
             div.innerHTML = `
