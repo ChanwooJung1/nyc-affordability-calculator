@@ -2,11 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NYC Affordability Heatmap</title>
+    <title>NYC Affordability Calculator</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital@0;1&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #0d9488;
+            --primary-dark: #0f766e;
+            --primary-light: #5eead4;
+            --secondary: #6366f1;
+            --accent: #10b981;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --bg-white: rgba(255, 255, 255, 0.85);
+            --bg-glass: rgba(255, 255, 255, 0.75);
+            --border-light: rgba(255, 255, 255, 0.5);
+            --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.08);
+            --shadow-medium: 0 20px 60px rgba(0, 0, 0, 0.12);
+            --radius-sm: 12px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,12 +36,12 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             overflow: hidden;
-            color: #333;
+            color: var(--text-primary);
+            background: #f8fafc;
         }
 
-        /* Full-screen map container */
         #heatmapMap {
             position: fixed;
             top: 0;
@@ -29,84 +51,71 @@
             z-index: 1;
         }
 
-        /* Minimal header overlay */
         .header-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.95) 100%);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            top: 16px;
+            left: 16px;
+            right: 16px;
+            height: 64px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
             z-index: 1000;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 24px;
         }
 
         .header-left {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 16px;
         }
 
-        /* Info panel toggle button */
         .info-toggle {
             width: 44px;
             height: 44px;
-            border-radius: 10px;
+            border-radius: var(--radius-sm);
             border: none;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 20px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-            position: relative;
-        }
-
-        .info-toggle::after {
-            content: '';
-            position: absolute;
-            top: -3px;
-            right: -3px;
-            width: 12px;
-            height: 12px;
-            background: #ff6b6b;
-            border-radius: 50%;
-            border: 2px solid white;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-            50% {
-                transform: scale(1.1);
-                opacity: 0.8;
-            }
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
         }
 
         .info-toggle:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-            transform: scale(1.08);
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(13, 148, 136, 0.4);
+        }
+
+        .site-branding {
+            display: flex;
+            flex-direction: column;
         }
 
         .site-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
             letter-spacing: -0.5px;
+            line-height: 1.2;
         }
 
-        /* Borough filters - top right overlay */
+        .site-tagline {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
         .borough-filter {
             display: flex;
             gap: 8px;
@@ -114,300 +123,658 @@
         }
 
         .borough-filter button {
-            padding: 8px 16px;
-            border: 2px solid #e0e0e0;
-            background: white;
-            color: #666;
-            border-radius: 20px;
+            padding: 10px 18px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.6);
+            color: var(--text-secondary);
+            border-radius: 100px;
             cursor: pointer;
             font-size: 13px;
             font-weight: 500;
+            font-family: 'Inter', sans-serif;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .borough-filter button:hover {
-            border-color: #667eea;
-            color: #667eea;
-            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--primary);
+            border-color: var(--primary-light);
         }
 
         .borough-filter button.active {
-            background: #667eea;
+            background: var(--primary);
             color: white;
-            border-color: #667eea;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
         }
 
-        /* Info panel - slides from left */
         .info-panel {
             position: fixed;
-            top: 60px;
-            left: -400px;
+            top: 100px;
+            left: -420px;
             width: 400px;
-            height: calc(100vh - 60px);
-            background: white;
-            box-shadow: 2px 0 20px rgba(0,0,0,0.15);
+            max-height: calc(100vh - 140px);
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-medium);
             z-index: 999;
-            overflow-y: auto;
+            overflow: hidden;
             transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 30px;
         }
 
         .info-panel.open {
-            left: 0;
+            left: 16px;
+        }
+
+        .info-panel-content {
+            padding: 28px;
+            padding-bottom: 40px;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
         }
 
         .info-panel h2 {
-            color: #2c3e50;
-            font-size: 24px;
-            margin-bottom: 15px;
+            color: var(--text-primary);
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
         }
 
         .info-panel p {
-            font-size: 15px;
-            line-height: 1.6;
-            color: #555;
-            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
         }
 
-        .info-highlight {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .info-hero {
+            background: linear-gradient(135deg, var(--primary) 0%, #0891b2 100%);
             color: white;
-            padding: 24px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            padding: 28px;
+            border-radius: var(--radius-md);
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .info-highlight h3 {
-            color: white;
-            font-size: 22px;
-            margin-bottom: 12px;
+        .info-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
+
+        .info-hero h3 {
+            font-size: 20px;
             font-weight: 700;
+            margin-bottom: 12px;
             line-height: 1.3;
+            position: relative;
         }
 
-        .info-highlight p {
-            color: rgba(255, 255, 255, 0.95) !important;
-            font-size: 15px !important;
+        .info-hero p {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-size: 14px !important;
             line-height: 1.7 !important;
             margin-bottom: 12px !important;
+            position: relative;
         }
 
-        .info-highlight strong {
-            color: white;
-            font-weight: 700;
+        .info-hero .savings-highlight {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 13px;
+            margin-top: 8px;
         }
 
         .scoring-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
             margin-top: 20px;
         }
 
         .score-item {
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease;
         }
 
-        .score-item h4 {
-            color: #667eea;
+        .score-item:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateX(4px);
+        }
+
+        .score-item-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .score-item-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 16px;
-            margin-bottom: 5px;
+        }
+
+        .score-item-icon.housing { background: linear-gradient(135deg, #10b981, #059669); }
+        .score-item-icon.transit { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+        .score-item-icon.daily { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .score-item-icon.grocery { background: linear-gradient(135deg, #ec4899, #db2777); }
+
+        .score-item h4 {
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .score-item-weight {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+            background: rgba(13, 148, 136, 0.1);
+            padding: 2px 8px;
+            border-radius: 100px;
         }
 
         .score-item p {
             margin: 0;
             font-size: 13px;
-            color: #666;
+            color: var(--text-secondary);
+            line-height: 1.5;
         }
 
         .bottom-line {
-            background: #f8f9fa;
-            padding: 15px;
-            border-left: 4px solid #667eea;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(13, 148, 136, 0.1));
+            padding: 16px;
+            border-radius: var(--radius-sm);
             margin-top: 20px;
-            border-radius: 4px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
         }
 
-        /* Legend - bottom right */
+        .bottom-line p {
+            margin: 0;
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .info-tabs {
+            display: flex;
+            gap: 0;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            padding: 4px;
+        }
+
+        .info-tab {
+            flex: 1;
+            padding: 14px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: var(--radius-sm);
+        }
+
+        .info-tab:hover {
+            color: var(--primary);
+        }
+
+        .info-tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .testimonials-header, .sources-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .testimonials-header h3, .sources-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .testimonials-header p, .sources-header p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .testimonial-carousel {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .testimonial-track {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .testimonial-slide {
+            min-width: 100%;
+            padding: 0 4px;
+        }
+
+        .testimonial-card {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+        }
+
+        .testimonial-card:hover {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .testimonial-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .testimonial-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .testimonial-avatar.student { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+        .testimonial-avatar.faculty { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .testimonial-avatar.parent { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .testimonial-avatar.resident { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); }
+
+        .testimonial-meta { flex: 1; }
+
+        .testimonial-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        .testimonial-role {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .testimonial-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 100px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .testimonial-badge.student { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+        .testimonial-badge.faculty { background: rgba(16, 185, 129, 0.1); color: #059669; }
+        .testimonial-badge.parent { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+        .testimonial-badge.resident { background: rgba(14, 165, 233, 0.1); color: #0284c7; }
+
+        .testimonial-detail {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .testimonial-quote {
+            font-family: 'Lora', Georgia, serif;
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            font-style: italic;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .testimonial-quote::before {
+            content: '"';
+            position: absolute;
+            left: 0;
+            top: -8px;
+            font-size: 40px;
+            color: var(--primary-light);
+            font-family: Georgia, serif;
+            line-height: 1;
+        }
+
+        .carousel-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .carousel-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .carousel-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.15);
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0;
+        }
+
+        .carousel-dot.active {
+            background: var(--primary);
+            width: 24px;
+            border-radius: 100px;
+        }
+
+        .carousel-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: white;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .carousel-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .source-card {
+            display: flex;
+            gap: 16px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .source-card:hover {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .source-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--primary), #0891b2);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .source-info { flex: 1; }
+
+        .source-info h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .source-provider {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .source-info p {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .source-note {
+            background: linear-gradient(135deg, rgba(13, 148, 136, 0.08), rgba(8, 145, 178, 0.08));
+            padding: 16px;
+            border-radius: var(--radius-sm);
+            margin-top: 20px;
+            border: 1px solid rgba(13, 148, 136, 0.15);
+        }
+
+        .source-note p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.6;
+        }
+
         .legend {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.15);
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-light);
+            padding: 20px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-soft);
             z-index: 998;
             min-width: 200px;
         }
 
         .legend-title {
             font-weight: 600;
-            margin-bottom: 10px;
-            font-size: 14px;
-            color: #2c3e50;
+            margin-bottom: 14px;
+            font-size: 13px;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .legend-item {
-            margin: 6px 0;
+            margin: 8px 0;
             display: flex;
             align-items: center;
             font-size: 13px;
+            color: var(--text-secondary);
         }
 
         .legend-color {
-            width: 35px;
-            height: 18px;
-            margin-right: 10px;
-            border-radius: 3px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            width: 32px;
+            height: 16px;
+            margin-right: 12px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        /* Side panel for rental listings - slides from right */
         .listings-panel {
             position: fixed;
-            top: 60px;
-            right: -450px;
-            width: 450px;
-            height: calc(100vh - 60px);
-            background: white;
-            box-shadow: -2px 0 20px rgba(0,0,0,0.15);
+            top: 100px;
+            right: -460px;
+            width: 440px;
+            max-height: calc(100vh - 140px);
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-medium);
             z-index: 999;
-            overflow-y: auto;
+            overflow: hidden;
             transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 0;
         }
 
         .listings-panel.open {
-            right: 0;
+            right: 16px;
         }
 
         .listings-header {
-            position: sticky;
-            top: 0;
-            background: white;
-            padding: 20px;
-            border-bottom: 2px solid #f0f0f0;
-            z-index: 10;
+            padding: 24px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            background: rgba(255, 255, 255, 0.5);
         }
 
         .listings-close {
             float: right;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border: none;
-            background: #f5f5f5;
+            background: rgba(0, 0, 0, 0.05);
             border-radius: 50%;
             cursor: pointer;
             font-size: 18px;
-            color: #666;
+            color: var(--text-secondary);
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .listings-close:hover {
-            background: #e0e0e0;
-            color: #333;
+            background: rgba(0, 0, 0, 0.1);
+            color: var(--text-primary);
         }
 
         .listings-title {
-            font-size: 22px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 5px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
         }
 
         .listings-subtitle {
             font-size: 14px;
-            color: #888;
+            color: var(--text-secondary);
         }
 
         .listings-content {
             padding: 20px;
+            overflow-y: auto;
+            max-height: calc(100vh - 240px);
         }
 
         .rental-card {
-            background: white;
-            border: 1px solid #e5e5e5;
-            border-radius: 10px;
-            padding: 18px;
-            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-bottom: 12px;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .rental-card:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.15);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: var(--shadow-soft);
             transform: translateY(-2px);
         }
 
         .rental-price {
             font-size: 24px;
             font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 8px;
+            color: var(--text-primary);
+            margin-bottom: 6px;
         }
 
         .rental-address {
             font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
         }
 
         .rental-details {
             display: flex;
-            gap: 15px;
+            gap: 16px;
             font-size: 13px;
-            color: #888;
-            margin-bottom: 12px;
+            color: var(--text-muted);
+            margin-bottom: 14px;
         }
 
         .rental-scores {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            margin-top: 12px;
         }
 
         .score-badge {
-            padding: 6px 10px;
-            border-radius: 6px;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
             font-size: 11px;
             font-weight: 600;
             text-align: center;
         }
 
-        .score-badge.high {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .score-badge.medium {
-            background: #fff3e0;
-            color: #e65100;
-        }
-
-        .score-badge.low {
-            background: #ffebee;
-            color: #c62828;
-        }
+        .score-badge.high { background: rgba(16, 185, 129, 0.1); color: #059669; }
+        .score-badge.medium { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+        .score-badge.low { background: rgba(239, 68, 68, 0.1); color: #dc2626; }
 
         .zip-stats {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, #0891b2 100%);
             color: white;
-            padding: 20px;
-            border-radius: 10px;
+            padding: 24px;
+            border-radius: var(--radius-md);
             margin-bottom: 20px;
         }
 
         .zip-stats h3 {
-            font-size: 18px;
-            margin-bottom: 15px;
+            font-size: 16px;
+            margin-bottom: 16px;
             color: white;
+            font-weight: 600;
         }
 
         .stat-grid {
@@ -418,102 +785,115 @@
 
         .stat-item {
             background: rgba(255, 255, 255, 0.15);
-            padding: 12px;
-            border-radius: 8px;
+            padding: 14px;
+            border-radius: var(--radius-sm);
             backdrop-filter: blur(10px);
         }
 
         .stat-label {
             font-size: 11px;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
             opacity: 0.9;
             margin-bottom: 4px;
         }
 
         .stat-value {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 700;
         }
 
-        /* Custom tooltip styling */
         .custom-tooltip {
-            background: white !important;
-            border: 1px solid #ddd !important;
-            border-radius: 10px !important;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15) !important;
-            padding: 14px !important;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+            background: var(--bg-glass) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid var(--border-light) !important;
+            border-radius: var(--radius-md) !important;
+            box-shadow: var(--shadow-medium) !important;
+            padding: 16px !important;
+            font-family: 'Inter', sans-serif !important;
             max-width: 400px !important;
         }
 
-        /* Scrollbar styling for rental preview */
-        .custom-tooltip div::-webkit-scrollbar {
+        .info-panel-content::-webkit-scrollbar,
+        .listings-content::-webkit-scrollbar {
             width: 6px;
         }
 
-        .custom-tooltip div::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        .info-panel-content::-webkit-scrollbar-track,
+        .listings-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .info-panel-content::-webkit-scrollbar-thumb,
+        .listings-content::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.1);
             border-radius: 3px;
         }
 
-        .custom-tooltip div::-webkit-scrollbar-thumb {
-            background: #c0c0c0;
-            border-radius: 3px;
-        }
-
-        .custom-tooltip div::-webkit-scrollbar-thumb:hover {
-            background: #a0a0a0;
-        }
-
-        /* Scrollbar styling */
-        .info-panel::-webkit-scrollbar,
-        .listings-panel::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .info-panel::-webkit-scrollbar-track,
-        .listings-panel::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        .info-panel::-webkit-scrollbar-thumb,
-        .listings-panel::-webkit-scrollbar-thumb {
-            background: #c0c0c0;
-            border-radius: 4px;
-        }
-
-        .info-panel::-webkit-scrollbar-thumb:hover,
-        .listings-panel::-webkit-scrollbar-thumb:hover {
-            background: #a0a0a0;
-        }
-
-        /* Responsive */
         @media (max-width: 768px) {
-            .info-panel, .listings-panel {
-                width: 100%;
-                left: -100%;
-                right: -100%;
+            .header-overlay {
+                top: 8px;
+                left: 8px;
+                right: 8px;
+                height: auto;
+                flex-direction: column;
+                padding: 12px 16px;
+                gap: 12px;
             }
+
+            .info-panel {
+                width: calc(100% - 16px);
+                left: -100%;
+                top: 140px;
+                max-height: calc(100vh - 160px);
+            }
+
+            .info-panel.open { left: 8px; }
+
+            .listings-panel {
+                width: calc(100% - 16px);
+                right: -100%;
+                top: 140px;
+                max-height: calc(100vh - 160px);
+            }
+
+            .listings-panel.open { right: 8px; }
 
             .borough-filter {
                 flex-wrap: wrap;
+                justify-content: center;
             }
 
-            .site-title {
-                font-size: 16px;
+            .borough-filter button {
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+
+            .legend {
+                bottom: 8px;
+                right: 8px;
+                left: 8px;
+                min-width: auto;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Full-screen map -->
     <div id="heatmapMap"></div>
 
-    <!-- Header overlay -->
     <div class="header-overlay">
         <div class="header-left">
-            <button class="info-toggle" onclick="toggleInfoPanel()" title="About this tool">ℹ️</button>
-            <span class="site-title">NYC Affordability Calculator</span>
+            <button class="info-toggle" onclick="toggleInfoPanel()" title="Explore">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="currentColor"></polygon>
+                </svg>
+            </button>
+            <div class="site-branding">
+                <span class="site-title">NYC Affordability Calculator</span>
+                <span class="site-tagline">Find your true cost of living</span>
+            </div>
         </div>
 
         <div class="borough-filter">
@@ -526,59 +906,208 @@
         </div>
     </div>
 
-    <!-- Info panel (slides from left) -->
     <div class="info-panel open" id="infoPanel">
-        <div class="info-highlight">
-            <h3>Why Rent Alone Doesn't Tell the Full Story</h3>
-            <p>
-                A $3,500/month apartment in one neighborhood could cost you <strong>$1,000+ more per month</strong> than
-                a $4,000 apartment elsewhere when you factor in transportation, groceries, and lifestyle.
-            </p>
-            <p style="margin-bottom: 0;">
-                <strong>Our Affordability Index</strong> measures the <em>true</em> monthly cost by combining:
-            </p>
+        <div class="info-tabs">
+            <button class="info-tab active" onclick="switchTab('howItWorks')">How It Works</button>
+            <button class="info-tab" onclick="switchTab('testimonials')">Community</button>
+            <button class="info-tab" onclick="switchTab('sources')">Sources</button>
         </div>
 
-        <h2>What We Measure & Why It Matters</h2>
+        <div class="info-panel-content">
+            <div class="tab-content active" id="tab-howItWorks">
+                <div class="info-hero">
+                    <h3>Rent Alone Doesn't Tell the Full Story</h3>
+                    <p>A $3,500/month apartment in one neighborhood could cost you <strong>$1,000+ more</strong> than a $4,000 apartment elsewhere—once you factor in transportation, groceries, and daily living.</p>
+                    <span class="savings-highlight">💰 Save up to $12,000/year</span>
+                </div>
 
-        <div class="scoring-grid">
-            <div class="score-item">
-                <h4>🏠 Housing (60%)</h4>
-                <p>Rent affordability based on median prices. Lower rent = more money for savings and experiences.</p>
-            </div>
-            <div class="score-item">
-                <h4>🚇 Transportation (20%)</h4>
-                <p>Transit access to work hubs. Good transit saves 10+ hours/week and reduces stress.</p>
-            </div>
-            <div class="score-item">
-                <h4>☕ Daily Living (10%)</h4>
-                <p>Coffee shops, restaurants, social venues. Walkable neighborhoods save time and build community.</p>
-            </div>
-            <div class="score-item">
-                <h4>🛒 Groceries (10%)</h4>
-                <p>Access to affordable grocery stores. Budget stores save $100-200/month vs premium-only areas.</p>
-            </div>
-        </div>
+                <h2>How We Calculate Affordability</h2>
 
-        <div class="bottom-line">
-            <strong>💡 Bottom line:</strong> Higher scores = Lower true cost of living + Better quality of life
+                <div class="scoring-grid">
+                    <div class="score-item">
+                        <div class="score-item-header">
+                            <div class="score-item-icon housing">🏠</div>
+                            <h4>Housing</h4>
+                            <span class="score-item-weight">60%</span>
+                        </div>
+                        <p>Rent compared to area median. Lower rent means more money for savings and experiences.</p>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-item-header">
+                            <div class="score-item-icon transit">🚇</div>
+                            <h4>Transportation</h4>
+                            <span class="score-item-weight">20%</span>
+                        </div>
+                        <p>Transit access to work hubs. Good transit saves 10+ hours/week and eliminates car costs.</p>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-item-header">
+                            <div class="score-item-icon daily">☕</div>
+                            <h4>Daily Living</h4>
+                            <span class="score-item-weight">10%</span>
+                        </div>
+                        <p>Walkable cafes, restaurants, services. Reduces delivery fees and car-dependent errands.</p>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-item-header">
+                            <div class="score-item-icon grocery">🛒</div>
+                            <h4>Groceries</h4>
+                            <span class="score-item-weight">10%</span>
+                        </div>
+                        <p>Access to budget grocery stores. Save $100-200/month vs premium-only areas.</p>
+                    </div>
+                </div>
+
+                <div class="bottom-line">
+                    <p>💡 <strong>Higher scores = Lower true cost of living</strong></p>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-testimonials">
+                <div class="testimonials-header">
+                    <h3>Community Stories</h3>
+                    <p>Hear from people who've used the calculator</p>
+                </div>
+
+                <div class="testimonial-carousel">
+                    <div class="testimonial-track" id="testimonialTrack">
+                        <div class="testimonial-slide">
+                            <div class="testimonial-card">
+                                <div class="testimonial-header">
+                                    <div class="testimonial-avatar student">JK</div>
+                                    <div class="testimonial-meta">
+                                        <div class="testimonial-name">Jason K.</div>
+                                        <div class="testimonial-role">
+                                            <span class="testimonial-badge student">Student</span>
+                                            <span class="testimonial-detail">SBS, 11th Grade</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="testimonial-quote">It's cool seeing classmates build something that actually solves a real problem. My family's been looking at apartments and this makes it way easier to compare neighborhoods you'd never think to check out.</div>
+                            </div>
+                        </div>
+
+                        <div class="testimonial-slide">
+                            <div class="testimonial-card">
+                                <div class="testimonial-header">
+                                    <div class="testimonial-avatar faculty">MR</div>
+                                    <div class="testimonial-meta">
+                                        <div class="testimonial-name">Dr. Michael R.</div>
+                                        <div class="testimonial-role">
+                                            <span class="testimonial-badge faculty">Faculty</span>
+                                            <span class="testimonial-detail">Computer Science</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="testimonial-quote">This demonstrates exactly what we hope students achieve—taking real datasets, applying meaningful analysis, and presenting it in a way that's genuinely useful. The weighted scoring shows solid data understanding.</div>
+                            </div>
+                        </div>
+
+                        <div class="testimonial-slide">
+                            <div class="testimonial-card">
+                                <div class="testimonial-header">
+                                    <div class="testimonial-avatar parent">SL</div>
+                                    <div class="testimonial-meta">
+                                        <div class="testimonial-name">Susan L.</div>
+                                        <div class="testimonial-role">
+                                            <span class="testimonial-badge parent">Family</span>
+                                            <span class="testimonial-detail">SBS Parent</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="testimonial-quote">It's impressive to see students tackling real-world problems. When we were apartment hunting years ago, something like this would have saved us weeks of research. Great practical application.</div>
+                            </div>
+                        </div>
+
+                        <div class="testimonial-slide">
+                            <div class="testimonial-card">
+                                <div class="testimonial-header">
+                                    <div class="testimonial-avatar resident">DM</div>
+                                    <div class="testimonial-meta">
+                                        <div class="testimonial-name">David M.</div>
+                                        <div class="testimonial-role">
+                                            <span class="testimonial-badge resident">Resident</span>
+                                            <span class="testimonial-detail">Brooklyn, 8 years</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="testimonial-quote">I've moved three times in the city. Wish I had this before my first lease in Manhattan—didn't realize how much cheaper and just as convenient some Brooklyn and Queens neighborhoods were.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="carousel-controls">
+                        <button class="carousel-btn" onclick="prevTestimonial()">←</button>
+                        <div class="carousel-dots">
+                            <button class="carousel-dot active" onclick="goToTestimonial(0)"></button>
+                            <button class="carousel-dot" onclick="goToTestimonial(1)"></button>
+                            <button class="carousel-dot" onclick="goToTestimonial(2)"></button>
+                            <button class="carousel-dot" onclick="goToTestimonial(3)"></button>
+                        </div>
+                        <button class="carousel-btn" onclick="nextTestimonial()">→</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-sources">
+                <div class="sources-header">
+                    <h3>Data Sources</h3>
+                    <p>Transparency about where our data comes from</p>
+                </div>
+
+                <div class="source-card">
+                    <div class="source-icon">🏠</div>
+                    <div class="source-info">
+                        <h4>Housing & Rent Data</h4>
+                        <div class="source-provider">Zillow</div>
+                        <p>Rental listings manually collected from Zillow.com, including addresses, prices, and property details. Updated regularly to reflect current market conditions.</p>
+                    </div>
+                </div>
+
+                <div class="source-card">
+                    <div class="source-icon">🚇</div>
+                    <div class="source-info">
+                        <h4>Transit Accessibility</h4>
+                        <div class="source-provider">Google Distance Matrix API</div>
+                        <p>Real-time transit duration calculations to major employment hubs (Financial District, Midtown Manhattan, Downtown Brooklyn) using public transportation.</p>
+                    </div>
+                </div>
+
+                <div class="source-card">
+                    <div class="source-icon">☕</div>
+                    <div class="source-info">
+                        <h4>Daily Living Amenities</h4>
+                        <div class="source-provider">Google Places API</div>
+                        <p>Coffee shops, restaurants, and cafes within a 0.5-mile radius. Measures neighborhood walkability and access to daily conveniences.</p>
+                    </div>
+                </div>
+
+                <div class="source-card">
+                    <div class="source-icon">🛒</div>
+                    <div class="source-info">
+                        <h4>Grocery Store Access</h4>
+                        <div class="source-provider">Google Places API</div>
+                        <p>Grocery stores categorized by price tier (budget: Trader Joe's, Aldi, Target; regular: ShopRite, Food Bazaar; premium: Whole Foods) within 0.5 miles.</p>
+                    </div>
+                </div>
+
+                <div class="source-note">
+                    <p>📊 All scores are normalized on a 0-100 scale based on NYC-wide distribution. Data is refreshed periodically to maintain accuracy.</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Listings panel (slides from right) -->
     <div class="listings-panel" id="listingsPanel">
         <div class="listings-header">
             <button class="listings-close" onclick="closeListingsPanel()">✕</button>
             <div class="listings-title" id="listingsTitle">Loading...</div>
             <div class="listings-subtitle" id="listingsSubtitle"></div>
         </div>
-        <div class="listings-content" id="listingsContent">
-            <!-- Rental cards will be dynamically inserted here -->
-        </div>
+        <div class="listings-content" id="listingsContent"></div>
     </div>
 
     <script>
-        // Data variables (will be loaded from API)
         let zipCodes = [];
         let overallScores = [];
         let housingScores = [];
@@ -591,7 +1120,9 @@
         let normalizedScores = [];
         let rentalCounts = [];
 
-        // Load heatmap data from API
+        let currentTestimonial = 0;
+        const totalTestimonials = 4;
+
         async function loadHeatmapData() {
             try {
                 const response = await fetch('/api/heatmap');
@@ -609,8 +1140,6 @@
                     longitudes = data.longitudes;
                     normalizedScores = data.normalizedScores;
                     rentalCounts = data.rentalCounts || [];
-
-                    // Load GeoJSON data after heatmap data is loaded
                     loadGeoJSON();
                 } else {
                     console.error('Failed to load heatmap data:', data.error);
@@ -620,27 +1149,23 @@
             }
         }
 
-        // Initialize map centered on NYC
         const map = L.map('heatmapMap').setView([40.7128, -74.0060], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors',
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
             maxZoom: 15,
             minZoom: 10
         }).addTo(map);
 
-        // Add balanced legend showing full 0-100 scale
         const legend = L.control({position: 'bottomright'});
         legend.onAdd = function (map) {
             const div = L.DomUtil.create('div', 'legend');
             div.innerHTML = `
-                <div class="legend-title">Affordability Score (0-100)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #00C853"></span> 80-100 (Excellent)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #43A047"></span> 65-79 (Very Good)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #7CB342"></span> 55-64 (Good)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #C0CA33"></span> 45-54 (Average)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #FDD835"></span> 35-44 (Fair)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #FB8C00"></span> 25-34 (Below Average)</div>
-                <div class="legend-item"><span class="legend-color" style="background: #E53935"></span> 0-24 (Poor)</div>
+                <div class="legend-title">Affordability Score</div>
+                <div class="legend-item"><span class="legend-color" style="background: linear-gradient(135deg, #059669, #10b981)"></span> 80-100 Excellent</div>
+                <div class="legend-item"><span class="legend-color" style="background: linear-gradient(135deg, #65a30d, #84cc16)"></span> 60-80 Good</div>
+                <div class="legend-item"><span class="legend-color" style="background: linear-gradient(135deg, #ca8a04, #eab308)"></span> 40-60 Moderate</div>
+                <div class="legend-item"><span class="legend-color" style="background: linear-gradient(135deg, #ea580c, #f97316)"></span> 20-40 Fair</div>
+                <div class="legend-item"><span class="legend-color" style="background: linear-gradient(135deg, #dc2626, #ef4444)"></span> 0-20 Poor</div>
             `;
             return div;
         };
@@ -648,418 +1173,183 @@
 
         let geoJsonLayer = null;
         let currentFilter = 'all';
-        let rentalMarkersLayer = null; // Layer group for rental markers
+        let rentalMarkersLayer = null;
 
-        // Custom icon for rental markers
         const rentalIcon = L.divIcon({
             className: 'rental-marker',
-            html: '<div style="background: #667eea; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
-            iconSize: [12, 12],
-            iconAnchor: [6, 6]
+            html: '<div style="background: linear-gradient(135deg, #0d9488, #0891b2); width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
         });
 
-        // Load GeoJSON and color by score
         function loadGeoJSON() {
             fetch('/ny_zip_codes.json')
                 .then(response => response.json())
                 .then(geojson => {
-                    if (geoJsonLayer) {
-                        map.removeLayer(geoJsonLayer);
-                    }
+                    if (geoJsonLayer) map.removeLayer(geoJsonLayer);
 
                     geoJsonLayer = L.geoJSON(geojson, {
                         style: function(feature) {
                             const zip = feature.properties.ZCTA5CE10.toString();
                             const index = zipCodes.indexOf(zip);
-
-                            // Filter by borough
                             if (index === -1) return { fillOpacity: 0, weight: 0 };
-                            if (currentFilter !== 'all' && boroughs[index] !== currentFilter) {
-                                return { fillOpacity: 0, weight: 0 };
-                            }
+                            if (currentFilter !== 'all' && boroughs[index] !== currentFilter) return { fillOpacity: 0, weight: 0 };
 
-                            const score = overallScores[index];
                             return {
-                                fillColor: getColorByScore(score),
-                                weight: 2,
+                                fillColor: getColorByScore(overallScores[index]),
+                                weight: 1.5,
                                 opacity: 1,
-                                color: '#333',
-                                fillOpacity: 0.7
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                fillOpacity: 0.75
                             };
                         },
                         onEachFeature: function(feature, layer) {
                             const zip = feature.properties.ZCTA5CE10.toString();
                             const index = zipCodes.indexOf(zip);
+                            if (index === -1) return;
 
-                            if (index !== -1) {
-                                const score = overallScores[index].toFixed(1);
-                                const borough = boroughs[index];
-                                const housing = housingScores[index].toFixed(1);
-                                const social = socialScores[index].toFixed(1);
-                                const transit = transitScores[index].toFixed(1);
+                            const score = overallScores[index].toFixed(1);
+                            const borough = boroughs[index];
 
-                                // No popup - removed per user request
+                            layer.bindTooltip(`
+                                <div style="font-family: 'Inter', sans-serif; min-width: 280px;">
+                                    <div style="font-weight: 600; font-size: 15px; margin-bottom: 6px; color: #1e293b;">ZIP ${zip} · ${borough}</div>
+                                    <div style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Overall Score: <strong style="color: #0d9488;">${score}/100</strong></div>
+                                    <div id="tooltip-rentals-${zip}" style="font-size: 12px;">
+                                        <div style="padding: 8px 0; color: #94a3b8; text-align: center;">Loading rentals...</div>
+                                    </div>
+                                </div>
+                            `, { sticky: true, direction: 'top', className: 'custom-tooltip' });
 
-                                // Create hover tooltip with ZIP and rental preview
-                                const createTooltipContent = (zipCode) => {
-                                    return `
-                                        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-width: 320px; max-width: 380px;">
-                                            <div style="font-weight: 600; font-size: 15px; margin-bottom: 6px; color: #2c3e50;">
-                                                ZIP ${zipCode} - ${borough}
-                                            </div>
-                                            <div style="font-size: 13px; color: #666; margin-bottom: 12px;">
-                                                Overall Score: <strong style="color: #667eea;">${score}/100</strong>
-                                            </div>
-                                            <div id="tooltip-rentals-${zipCode}" style="font-size: 12px;">
-                                                <div style="padding: 8px 0; color: #999; text-align: center;">
-                                                    <div style="display: inline-block; width: 16px; height: 16px; border: 2px solid #667eea; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-                                                    <div style="margin-top: 4px; font-size: 11px;">Loading rentals...</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <style>
-                                            @keyframes spin {
-                                                to { transform: rotate(360deg); }
+                            let rentalsLoaded = false;
+                            layer.on('mouseover', function() {
+                                layer.setStyle({ fillOpacity: 0.9, weight: 2.5, color: 'white' });
+                                if (!rentalsLoaded) {
+                                    rentalsLoaded = true;
+                                    fetch(`/api/rentals/zip/${zip}`)
+                                        .then(r => r.json())
+                                        .then(data => {
+                                            const div = document.getElementById(`tooltip-rentals-${zip}`);
+                                            if (!div) return;
+                                            if (data.success && data.count > 0) {
+                                                let html = `<div style="border-top: 1px solid rgba(0,0,0,0.08); padding-top: 10px;"><div style="font-weight: 600; color: #0d9488; margin-bottom: 8px;">${data.count} Rentals Available</div>`;
+                                                data.rentals.slice(0, 3).forEach(r => {
+                                                    const price = r['Rental Price'] ? `$${r['Rental Price'].toLocaleString()}` : 'N/A';
+                                                    html += `<div style="padding: 8px; background: rgba(255,255,255,0.8); border-radius: 8px; margin-bottom: 6px;"><strong>${price}/mo</strong><br><span style="color: #64748b; font-size: 11px;">${(r.Address || '').substring(0, 30)}</span></div>`;
+                                                });
+                                                html += `<div style="text-align: center; padding-top: 8px;"><span style="background: var(--primary); color: white; padding: 6px 12px; border-radius: 100px; font-size: 11px; font-weight: 600;">Click to view all →</span></div></div>`;
+                                                div.innerHTML = html;
+                                                showRentalMarkers(data.rentals, zip);
+                                            } else {
+                                                div.innerHTML = '<div style="color: #94a3b8; text-align: center; padding: 8px;">No rental data yet</div>';
                                             }
-                                        </style>
-                                    `;
-                                };
+                                        });
+                                }
+                            });
 
-                                // Bind tooltip that appears on hover
-                                layer.bindTooltip(createTooltipContent(zip), {
-                                    sticky: true,
-                                    direction: 'top',
-                                    className: 'custom-tooltip'
-                                });
+                            layer.on('mouseout', function() {
+                                layer.setStyle({ fillOpacity: 0.75, weight: 1.5, color: 'rgba(255, 255, 255, 0.8)' });
+                                hideRentalMarkers();
+                            });
 
-                                // Load rental data when hovering
-                                let rentalsLoaded = false;
-                                layer.on('mouseover', function(e) {
-                                    layer.setStyle({ fillOpacity: 0.9, weight: 3 });
-
-                                    // Load rentals only once
-                                    if (!rentalsLoaded) {
-                                        rentalsLoaded = true;
-                                        fetch(`/api/rentals/zip/${zip}`)
-                                            .then(response => response.json())
-                                            .then(data => {
-                                                const tooltipDiv = document.getElementById(`tooltip-rentals-${zip}`);
-                                                if (!tooltipDiv) return;
-
-                                                if (data.success && data.count > 0) {
-                                                    // Show preview of first 3 rentals with scroll
-                                                    const previewCount = Math.min(3, data.count);
-                                                    const hasMore = data.count > 3;
-
-                                                    let html = `
-                                                        <div style="border-top: 1px solid #e5e5e5; padding-top: 10px; margin-top: 8px;">
-                                                            <div style="font-weight: 600; color: #667eea; margin-bottom: 8px; font-size: 12px;">
-                                                                ${data.count} Rental${data.count > 1 ? 's' : ''} Available
-                                                            </div>
-                                                            <div style="max-height: 240px; overflow-y: auto; margin-bottom: 8px;">
-                                                    `;
-
-                                                    // Show first 3 rentals
-                                                    data.rentals.slice(0, previewCount).forEach((r, idx) => {
-                                                        const price = r['Rental Price'] ? `$${r['Rental Price'].toLocaleString()}` : 'N/A';
-                                                        const addr = (r.Address || 'Address N/A').substring(0, 35);
-                                                        const beds = r.Bedrooms || '?';
-                                                        const baths = r.Bathrooms || '?';
-                                                        const transit = r['Transit Score'] || 0;
-
-                                                        const transitBadge = transit >= 75 ? 'high' : transit >= 50 ? 'medium' : 'low';
-                                                        const transitColor = transit >= 75 ? '#2e7d32' : transit >= 50 ? '#e65100' : '#c62828';
-
-                                                        html += `
-                                                            <div style="margin-bottom: 8px; padding: 10px; background: #f9f9f9; border-radius: 6px; border-left: 3px solid #667eea;">
-                                                                <div style="font-weight: 600; color: #2c3e50; margin-bottom: 3px;">${price}/mo</div>
-                                                                <div style="color: #666; font-size: 11px; margin-bottom: 4px;">${addr}</div>
-                                                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                                                    <span style="color: #999; font-size: 10px;">${beds} bed • ${baths} bath</span>
-                                                                    <span style="background: ${transitColor}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 600;">
-                                                                        Transit: ${transit}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        `;
-                                                    });
-
-                                                    html += `</div>`;
-
-                                                    // Add "Click to see all" button
-                                                    html += `
-                                                        <div style="text-align: center; padding-top: 8px; border-top: 1px solid #e5e5e5;">
-                                                            <div style="background: #667eea; color: white; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">
-                                                                ${hasMore ? `Click to see all ${data.count} rentals →` : 'Click to see details →'}
-                                                            </div>
-                                                        </div>
-                                                    </div>`;
-
-                                                    tooltipDiv.innerHTML = html;
-
-                                                    // ADD RENTAL MARKERS TO MAP
-                                                    showRentalMarkers(data.rentals, zip);
-                                                } else {
-                                                    // No rental data available for this ZIP
-                                                    tooltipDiv.innerHTML = `
-                                                        <div style="border-top: 1px solid #e5e5e5; padding: 12px 0; margin-top: 8px; text-align: center;">
-                                                            <div style="color: #fb8c00; margin-bottom: 6px;">⚠️</div>
-                                                            <div style="color: #666; font-size: 11px; line-height: 1.4;">
-                                                                Housing score only<br>
-                                                                <span style="color: #999;">(No rental data yet)</span>
-                                                            </div>
-                                                        </div>
-                                                    `;
-                                                }
-                                            })
-                                            .catch(err => {
-                                                console.error('Error loading rentals:', err);
-                                                const tooltipDiv = document.getElementById(`tooltip-rentals-${zip}`);
-                                                if (tooltipDiv) {
-                                                    tooltipDiv.innerHTML = `
-                                                        <div style="border-top: 1px solid #e5e5e5; padding: 12px 0; margin-top: 8px; text-align: center;">
-                                                            <div style="color: #e53935; font-size: 11px;">Unable to load rentals</div>
-                                                        </div>
-                                                    `;
-                                                }
-                                            });
-                                    }
-                                });
-
-                                layer.on('mouseout', function(e) {
-                                    layer.setStyle({ fillOpacity: 0.7, weight: 2 });
-                                    // Remove rental markers when mouse leaves ZIP
-                                    hideRentalMarkers();
-                                });
-
-                                layer.on('click', function(e) {
-                                    // Open listings panel instead of navigating away
-                                    openListingsPanel(zip);
-                                });
-                            }
+                            layer.on('click', function() { openListingsPanel(zip); });
                         }
                     }).addTo(map);
-                })
-                .catch(error => console.error('Error loading GeoJSON:', error));
+                });
         }
 
-        // Balanced color gradient for 0-100 scale (middle ground)
         function getColorByScore(score) {
-            // Ensure score is between 0-100
-            score = Math.max(0, Math.min(100, score));
-
-            // Balanced color distribution
-            if (score >= 80) return '#00C853';      // Bright green (80-100)
-            if (score >= 65) return '#43A047';      // Green (65-80)
-            if (score >= 55) return '#7CB342';      // Light green (55-65)
-            if (score >= 45) return '#C0CA33';      // Lime (45-55)
-            if (score >= 35) return '#FDD835';      // Yellow (35-45)
-            if (score >= 25) return '#FFB300';      // Amber (25-35)
-            if (score >= 18) return '#FB8C00';      // Orange (18-25)
-            if (score >= 12) return '#F4511E';      // Deep orange (12-18)
-            if (score >= 6) return '#E53935';       // Red (6-12)
-            return '#C62828';                        // Dark red (0-6)
+            return score > 80 ? '#10b981' : score > 60 ? '#84cc16' : score > 40 ? '#eab308' : score > 20 ? '#f97316' : '#ef4444';
         }
 
-        // Panel management functions
         function toggleInfoPanel() {
-            const panel = document.getElementById('infoPanel');
-            panel.classList.toggle('open');
+            document.getElementById('infoPanel').classList.toggle('open');
         }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.info-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        function updateCarousel() {
+            document.getElementById('testimonialTrack').style.transform = `translateX(-${currentTestimonial * 100}%)`;
+            document.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === currentTestimonial));
+        }
+
+        function nextTestimonial() { currentTestimonial = (currentTestimonial + 1) % totalTestimonials; updateCarousel(); }
+        function prevTestimonial() { currentTestimonial = (currentTestimonial - 1 + totalTestimonials) % totalTestimonials; updateCarousel(); }
+        function goToTestimonial(i) { currentTestimonial = i; updateCarousel(); }
+
+        setInterval(() => { if (document.getElementById('tab-testimonials').classList.contains('active')) nextTestimonial(); }, 6000);
 
         function openListingsPanel(zipCode) {
             const panel = document.getElementById('listingsPanel');
-            const title = document.getElementById('listingsTitle');
-            const subtitle = document.getElementById('listingsSubtitle');
-            const content = document.getElementById('listingsContent');
-
-            // Get ZIP code data
             const index = zipCodes.indexOf(zipCode);
             if (index === -1) return;
 
             const score = Math.round(overallScores[index]);
-            const borough = boroughs[index];
-            const housing = Math.round(housingScores[index]);
-            const social = Math.round(socialScores[index]);
-            const transit = Math.round(transitScores[index]);
-
-            title.textContent = `ZIP ${zipCode} - ${borough}`;
-            subtitle.textContent = `Overall Score: ${score}/100`;
-
-            // Show loading state
-            content.innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">Loading rentals...</div>';
+            document.getElementById('listingsTitle').textContent = `ZIP ${zipCode} · ${boroughs[index]}`;
+            document.getElementById('listingsSubtitle').textContent = `Overall Score: ${score}/100`;
+            document.getElementById('listingsContent').innerHTML = '<div style="padding: 40px; text-align: center; color: #94a3b8;">Loading...</div>';
             panel.classList.add('open');
 
-            // Fetch rentals
             fetch(`/api/rentals/zip/${zipCode}`)
-                .then(response => response.json())
+                .then(r => r.json())
                 .then(data => {
                     if (data.success && data.count > 0) {
-                        // Show ZIP stats first
-                        let html = `
-                            <div class="zip-stats">
-                                <h3>Affordability Breakdown</h3>
-                                <div class="stat-grid">
-                                    <div class="stat-item">
-                                        <div class="stat-label">Overall Score</div>
-                                        <div class="stat-value">${score}</div>
-                                    </div>
-                                    <div class="stat-item">
-                                        <div class="stat-label">Housing</div>
-                                        <div class="stat-value">${housing}</div>
-                                    </div>
-                                    <div class="stat-item">
-                                        <div class="stat-label">Transit</div>
-                                        <div class="stat-value">${transit}</div>
-                                    </div>
-                                    <div class="stat-item">
-                                        <div class="stat-label">Daily Living</div>
-                                        <div class="stat-value">${social}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <h3 style="margin-bottom: 15px; color: #2c3e50;">${data.count} Available Rentals</h3>
-                        `;
+                        let html = `<div class="zip-stats"><h3>Affordability Breakdown</h3><div class="stat-grid">
+                            <div class="stat-item"><div class="stat-label">Overall</div><div class="stat-value">${score}</div></div>
+                            <div class="stat-item"><div class="stat-label">Housing</div><div class="stat-value">${Math.round(housingScores[index])}</div></div>
+                            <div class="stat-item"><div class="stat-label">Transit</div><div class="stat-value">${Math.round(transitScores[index])}</div></div>
+                            <div class="stat-item"><div class="stat-label">Daily Living</div><div class="stat-value">${Math.round(socialScores[index])}</div></div>
+                        </div></div><h3 style="margin-bottom: 16px; font-size: 16px;">${data.count} Available Rentals</h3>`;
 
-                        // Add rental cards
                         data.rentals.forEach((r, idx) => {
                             const price = r['Rental Price'] ? `$${r['Rental Price'].toLocaleString()}` : 'N/A';
-                            const addr = r.Address || 'Address N/A';
-                            const beds = r.Bedrooms || '?';
-                            const baths = r.Bathrooms || '?';
-                            const sqft = r['Square Feet'] || '?';
-
-                            // Calculate score badges
-                            const transitScore = r['Transit Score'] || 0;
-                            const socialScore = r['Social Score'] || 0;
-                            const groceryScore = r['Grocery Score'] || 0;
-
-                            const getScoreBadge = (score, label) => {
-                                const level = score >= 75 ? 'high' : score >= 50 ? 'medium' : 'low';
-                                return `<div class="score-badge ${level}">${label}: ${Math.round(score)}</div>`;
-                            };
-
-                            html += `
-                                <div class="rental-card" onclick="window.location.href='/rental?zip=${zipCode}&index=${idx}'">
-                                    <div class="rental-price">${price}/mo</div>
-                                    <div class="rental-address">${addr}</div>
-                                    <div class="rental-details">
-                                        <span>🛏️ ${beds} bed</span>
-                                        <span>🚿 ${baths} bath</span>
-                                        <span>📏 ${sqft} sqft</span>
-                                    </div>
-                                    <div class="rental-scores">
-                                        ${getScoreBadge(transitScore, 'Transit')}
-                                        ${getScoreBadge(socialScore, 'Social')}
-                                        ${getScoreBadge(groceryScore, 'Grocery')}
-                                    </div>
-                                </div>
-                            `;
+                            const getBadge = (s, l) => `<div class="score-badge ${s >= 75 ? 'high' : s >= 50 ? 'medium' : 'low'}">${l}: ${Math.round(s)}</div>`;
+                            html += `<div class="rental-card" onclick="window.location.href='/rental?zip=${zipCode}&index=${idx}'">
+                                <div class="rental-price">${price}/mo</div>
+                                <div class="rental-address">${r.Address || 'N/A'}</div>
+                                <div class="rental-details"><span>🛏️ ${r.Bedrooms || '?'} bed</span><span>🚿 ${r.Bathrooms || '?'} bath</span><span>📐 ${r['Square Feet'] || '?'} sqft</span></div>
+                                <div class="rental-scores">${getBadge(r['Transit Score'] || 0, 'Transit')}${getBadge(r['Social Score'] || 0, 'Social')}${getBadge(r['Grocery Score'] || 0, 'Grocery')}</div>
+                            </div>`;
                         });
-
-                        content.innerHTML = html;
+                        document.getElementById('listingsContent').innerHTML = html;
                     } else {
-                        content.innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">No rental data available for this ZIP code</div>';
+                        document.getElementById('listingsContent').innerHTML = '<div style="padding: 40px; text-align: center; color: #94a3b8;">No rental data available</div>';
                     }
-                })
-                .catch(err => {
-                    console.error('Error loading rentals:', err);
-                    content.innerHTML = '<div style="padding: 40px; text-align: center; color: #e53935;">Error loading rentals</div>';
                 });
         }
 
-        function closeListingsPanel() {
-            document.getElementById('listingsPanel').classList.remove('open');
-        }
+        function closeListingsPanel() { document.getElementById('listingsPanel').classList.remove('open'); }
 
         function filterBorough(borough) {
             currentFilter = borough;
-
-            // Update button styles
-            document.querySelectorAll('.borough-filter button').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            document.querySelectorAll('.borough-filter button').forEach(b => b.classList.remove('active'));
             document.getElementById(`btn-${borough}`).classList.add('active');
-
-            // Reload GeoJSON with filter
             loadGeoJSON();
-
-            // Adjust map view
-            if (borough === 'Manhattan') {
-                map.setView([40.7831, -73.9712], 12);
-            } else if (borough === 'Brooklyn') {
-                map.setView([40.6782, -73.9442], 12);
-            } else if (borough === 'Queens') {
-                map.setView([40.7282, -73.7949], 11);
-            } else if (borough === 'Bronx') {
-                map.setView([40.8448, -73.8648], 12);
-            } else if (borough === 'Staten Island') {
-                map.setView([40.5795, -74.1502], 12);
-            } else {
-                map.setView([40.7128, -74.0060], 11);
-            }
+            const views = { Manhattan: [40.7831, -73.9712, 12], Brooklyn: [40.6782, -73.9442, 12], Queens: [40.7282, -73.7949, 11], Bronx: [40.8448, -73.8648, 12], 'Staten Island': [40.5795, -74.1502, 12], all: [40.7128, -74.0060, 11] };
+            const v = views[borough] || views.all;
+            map.setView([v[0], v[1]], v[2]);
         }
 
-        // Function to show rental markers on map
         function showRentalMarkers(rentals, zipCode) {
-            // Clear existing markers first
             hideRentalMarkers();
-
-            // Create new layer group for markers
             rentalMarkersLayer = L.layerGroup();
-
-            rentals.forEach((rental, idx) => {
-                const lat = rental.Latitude;
-                const lng = rental.Longitude;
-
-                // Skip if no valid coordinates
-                if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
-                    return;
-                }
-
-                const price = rental['Rental Price'] ? `$${rental['Rental Price'].toLocaleString()}` : 'N/A';
-                const addr = rental.Address || 'Address N/A';
-                const beds = rental.Bedrooms || '?';
-                const baths = rental.Bathrooms || '?';
-
-                // Create marker
-                const marker = L.marker([lat, lng], { icon: rentalIcon })
-                    .bindTooltip(`
-                        <div style="font-family: Arial; font-size: 12px; min-width: 180px;">
-                            <strong style="color: #667eea; font-size: 14px;">${price}/mo</strong><br>
-                            <span style="color: #666;">${addr}</span><br>
-                            <span style="color: #999; font-size: 11px;">${beds} bed • ${baths} bath</span><br>
-                            <a href="/rental?zip=${zipCode}&index=${idx}" style="display: inline-block; margin-top: 6px; padding: 4px 10px; background: #667eea; color: white; text-decoration: none; border-radius: 3px; font-size: 11px; font-weight: bold;">
-                                View Details →
-                            </a>
-                        </div>
-                    `, {
-                        direction: 'top',
-                        offset: [0, -5]
-                    });
-
-                // Make marker clickable to view details
-                marker.on('click', function() {
-                    window.location.href = `/rental?zip=${zipCode}&index=${idx}`;
-                });
-
-                // Add to layer group
+            rentals.forEach((r, idx) => {
+                if (!r.Latitude || !r.Longitude) return;
+                const marker = L.marker([r.Latitude, r.Longitude], { icon: rentalIcon })
+                    .bindTooltip(`<strong style="color: #0d9488;">$${(r['Rental Price'] || 0).toLocaleString()}/mo</strong><br>${r.Address || ''}`);
+                marker.on('click', () => window.location.href = `/rental?zip=${zipCode}&index=${idx}`);
                 rentalMarkersLayer.addLayer(marker);
             });
-
-            // Add layer group to map
             rentalMarkersLayer.addTo(map);
         }
 
-        // Function to hide/remove rental markers
-        function hideRentalMarkers() {
-            if (rentalMarkersLayer) {
-                map.removeLayer(rentalMarkersLayer);
-                rentalMarkersLayer = null;
-            }
-        }
+        function hideRentalMarkers() { if (rentalMarkersLayer) { map.removeLayer(rentalMarkersLayer); rentalMarkersLayer = null; } }
 
-        // Initial load - Load heatmap data from API first
         loadHeatmapData();
     </script>
 </body>
